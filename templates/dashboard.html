@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Painel</title>
+</head>
+<body>
+    <h2>Valor atual: {{ valor }}</h2>
+    <h2>Resultado (x * 2): {{ resultado }}</h2>
+
+    <form method="POST">
+        <input type="number" step="any" name="valor" placeholder="Novo valor">
+        <button type="submit">Atualizar</button>
+    </form>
+
+    <br>
+    <a href="{{ url_for('logout') }}">Sair</a>
+</body>
+</html>
