@@ -4,6 +4,10 @@
     <title>Painel</title>
 </head>
 <body>
+    <div style="text-align:center;">
+        <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Logo" width="200">
+    </div>
+
     <h2>Valor atual: {{ valor }}</h2>
     <h2>Resultado (x * 2): {{ resultado }}</h2>
 
