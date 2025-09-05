@@ -1,62 +1,39 @@
-from flask import Flask, render_template, request, redirect, url_for, session
-import sqlite3
+from flask import Flask, render_template, request
 
 app = Flask(__name__)
-app.secret_key = "senha-super-secreta"
-
-# Função para inicializar banco
-def init_db():
-    conn = sqlite3.connect("dados.db")
-    c = conn.cursor()
-    c.execute("""CREATE TABLE IF NOT EXISTS valores (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    valor REAL
-                )""")
-    conn.commit()
-    conn.close()
-
-init_db()
 
 @app.route("/", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        usuario = request.form["usuario"]
-        senha = request.form["senha"]
-        if usuario == "admin" and senha == "1234":
-            session["logado"] = True
-            return redirect(url_for("dashboard"))
-    return render_template("login.html")
-
-@app.route("/dashboard", methods=["GET", "POST"])
-def dashboard():
-    if not session.get("logado"):
-        return redirect(url_for("login"))
-
-    conn = sqlite3.connect("dados.db")
-    c = conn.cursor()
+def calculo():
+    resultado = None
 
     if request.method == "POST":
-        valor = float(request.form["valor"])
-        c.execute("INSERT INTO valores (valor) VALUES (?)", (valor,))
-        conn.commit()
+        # Ler os valores do formulário
+        mistura = request.form["mistura"]
+        espessura = float(request.form["espessura"])
+        producao = float(request.form["producao"])
+        distancia = float(request.form["distancia"])
+        dificuldade = int(request.form["dificuldade"])
+        lucro = float(request.form["lucro"])
 
-    c.execute("SELECT valor FROM valores ORDER BY id DESC LIMIT 1")
-    ultimo = c.fetchone()
-    conn.close()
+        # Valores fictícios só para exemplo (estes virão da BD futuramente)
+        custo_central = 1000
+        custo_equipamentos = 2000
+        custo_humanos = 1500
+        custo_fabrico = 20
+        custo_mistura = 80
+        custo_transporte = 300
+        n_ciclos = 5
+        baridade = 2.4
 
-    if ultimo:
-        valor = ultimo[0]
-        resultado = valor * 2
-    else:
-        valor = None
-        resultado = None
+        # Fórmula simplificada
+        fixo_por_ton = (custo_central + custo_equipamentos + custo_humanos) / producao
+        variavel_por_ton = custo_fabrico + custo_mistura + (custo_transporte / (30 * n_ciclos))
+        custo_base = (fixo_por_ton + variavel_por_ton) * baridade
+        preco_final = custo_base * (1 + lucro / 100)
 
-    return render_template("dashboard.html", valor=valor, resultado=resultado)
+        resultado = round(preco_final, 2)
 
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect(url_for("login"))
+    return render_template("calculo.html", resultado=resultado)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    app.run(debug=True)
