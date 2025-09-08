@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt">
 <head>
@@ -36,7 +37,6 @@
   </style>
 </head>
 <body>
-  <!-- Barra estilo Excel -->
   <div class="menu-excel">
     <ul class="nav nav-tabs">
       <li class="nav-item"><a class="nav-link {% if request.path == '/' %}active{% endif %}" href="/"><i class="bi bi-calculator"></i> Cálculo</a></li>
@@ -47,9 +47,14 @@
       <li class="nav-item"><a class="nav-link {% if request.path == '/diversos' %}active{% endif %}" href="/diversos"><i class="bi bi-gear"></i> Diversos</a></li>
     </ul>
   </div>
-
-  <!-- Conteúdo dinâmico -->
-  <div class="conteudo">
+  <div class="conteudo container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for cat, msg in messages %}
+          <div class="alert alert-{{ cat }} mt-2">{{ msg }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
     {% block content %}{% endblock %}
   </div>
 </body>

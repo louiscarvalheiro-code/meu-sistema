@@ -1,1 +1,28 @@
-{% extends "base.html" %}{% block content %}<h2>Diversos</h2><p>Custos adicionais (produção central, fabrico, etc.).</p>{% endblock %}
+
+{% extends "base.html" %}
+{% block content %}
+<h2>Diversos</h2>
+<form method="POST" class="row g-3 mb-3">
+  <div class="col-md-6"><input class="form-control" name="nome" placeholder="Nome do custo (ex: Custo Central)" required></div>
+  <div class="col-md-4"><input class="form-control" name="valor" placeholder="Valor (€)" required></div>
+  <div class="col-md-2"><button class="btn btn-success" type="submit">Adicionar</button></div>
+</form>
+
+<table class="table table-striped">
+  <thead><tr><th>Nome</th><th>Valor</th><th>Ações</th></tr></thead>
+  <tbody>
+  {% for it in lista %}
+    <tr>
+      <td>{{ it.nome }}</td>
+      <td>{{ it.valor }}</td>
+      <td>
+        <a class="btn btn-sm btn-primary" href="{{ url_for('diversos_edit', id=it.id) }}">Editar</a>
+        <form method="POST" action="{{ url_for('diversos_delete', id=it.id) }}" style="display:inline">
+          <button class="btn btn-sm btn-danger" type="submit">Apagar</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

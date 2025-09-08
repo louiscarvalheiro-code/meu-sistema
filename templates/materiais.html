@@ -1,1 +1,29 @@
-{% extends "base.html" %}{% block content %}<h2>Materiais</h2><p>Gestão de materiais e transporte.</p>{% endblock %}
+
+{% extends "base.html" %}
+{% block content %}
+<h2>Materiais</h2>
+<form method="POST" class="row g-3 mb-3">
+  <div class="col-md-4"><input class="form-control" name="nome" placeholder="Material (e.g. Brita 1 Calcário)" required></div>
+  <div class="col-md-3"><input class="form-control" name="preco" placeholder="Preço (€/ton)" required></div>
+  <div class="col-md-3"><input class="form-control" name="transporte" placeholder="Transporte (€/ton)" required></div>
+  <div class="col-md-2"><button class="btn btn-success" type="submit">Adicionar</button></div>
+</form>
+<table class="table table-striped">
+  <thead><tr><th>Nome</th><th>Preço</th><th>Transporte</th><th>Ações</th></tr></thead>
+  <tbody>
+  {% for it in lista %}
+    <tr>
+      <td>{{ it.nome }}</td>
+      <td>{{ it.preco }}</td>
+      <td>{{ it.transporte }}</td>
+      <td>
+        <a class="btn btn-sm btn-primary" href="{{ url_for('materiais_edit', id=it.id) }}">Editar</a>
+        <form method="POST" action="{{ url_for('materiais_delete', id=it.id) }}" style="display:inline">
+          <button class="btn btn-sm btn-danger" type="submit">Apagar</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

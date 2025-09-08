@@ -1,0 +1,10 @@
+
+{% extends "base.html" %}
+{% block content %}
+<h2>Editar Humano</h2>
+<form method="POST" class="row g-3">
+  <div class="col-md-6"><input class="form-control" name="nome" value="{{ item.nome }}" required></div>
+  <div class="col-md-4"><input class="form-control" name="custo" value="{{ item.custo }}" required></div>
+  <div class="col-md-2"><button class="btn btn-primary" type="submit">Guardar</button></div>
+</form>
+{% endblock %}

@@ -1,0 +1,42 @@
+
+{% extends "base.html" %}
+{% block content %}
+<h2>Editar Mistura: {{ item.nome }}</h2>
+<form method="POST" class="row g-3 mb-3">
+  <div class="col-md-6"><input class="form-control" name="nome" value="{{ item.nome }}" required></div>
+  <div class="col-md-3"><input class="form-control" name="baridade" value="{{ item.baridade }}" required></div>
+  <div class="col-md-3"><button class="btn btn-primary" type="submit">Guardar</button></div>
+</form>
+
+<hr>
+<h4>Componentes</h4>
+<form method="POST" action="{{ url_for('mistura_component_add') }}" class="row g-3 mb-3">
+  <input type="hidden" name="mistura_id" value="{{ item.id }}">
+  <div class="col-md-5">
+    <select name="material_id" class="form-select">
+      {% for m in materiais %}
+        <option value="{{ m.id }}">{{ m.nome }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-4"><input class="form-control" name="percentagem" placeholder="Percentagem (%)" required></div>
+  <div class="col-md-3"><button class="btn btn-success" type="submit">Adicionar componente</button></div>
+</form>
+
+<table class="table">
+  <thead><tr><th>Material</th><th>%</th><th>Ações</th></tr></thead>
+  <tbody>
+  {% for c in item.componentes %}
+    <tr>
+      <td>{{ c.material.nome }}</td>
+      <td>{{ c.percentagem }}</td>
+      <td>
+        <form method="POST" action="{{ url_for('mistura_component_delete', id=c.id) }}" style="display:inline">
+          <button class="btn btn-sm btn-danger" type="submit">Remover</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
