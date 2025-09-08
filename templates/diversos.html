@@ -1,28 +1,18 @@
-
 {% extends "base.html" %}
 {% block content %}
 <h2>Diversos</h2>
-<form method="POST" class="row g-3 mb-3">
-  <div class="col-md-6"><input class="form-control" name="nome" placeholder="Nome do custo (ex: Custo Central)" required></div>
-  <div class="col-md-4"><input class="form-control" name="valor" placeholder="Valor (€)" required></div>
-  <div class="col-md-2"><button class="btn btn-success" type="submit">Adicionar</button></div>
+<form method="POST">
+  Nome: <input name="nome">
+  Valor: <input type="number" step="0.01" name="valor">
+  <button type="submit">Adicionar</button>
 </form>
-
-<table class="table table-striped">
-  <thead><tr><th>Nome</th><th>Valor</th><th>Ações</th></tr></thead>
-  <tbody>
-  {% for it in lista %}
+<table>
+  <tr><th>Nome</th><th>Valor</th><th>Ações</th></tr>
+  {% for d in diversos %}
     <tr>
-      <td>{{ it.nome }}</td>
-      <td>{{ it.valor }}</td>
-      <td>
-        <a class="btn btn-sm btn-primary" href="{{ url_for('diversos_edit', id=it.id) }}">Editar</a>
-        <form method="POST" action="{{ url_for('diversos_delete', id=it.id) }}" style="display:inline">
-          <button class="btn btn-sm btn-danger" type="submit">Apagar</button>
-        </form>
-      </td>
+      <td>{{d.nome}}</td><td>{{d.valor}}</td>
+      <td><a href="/diversos/delete/{{d.id}}">❌</a></td>
     </tr>
   {% endfor %}
-  </tbody>
 </table>
 {% endblock %}

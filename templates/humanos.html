@@ -1,27 +1,18 @@
-
 {% extends "base.html" %}
 {% block content %}
-<h2>Meios Humanos</h2>
-<form method="POST" class="row g-3 mb-3">
-  <div class="col-md-6"><input class="form-control" name="nome" placeholder="Função (e.g. Operador)" required></div>
-  <div class="col-md-4"><input class="form-control" name="custo" placeholder="Custo (€/dia ou €/hora)" required></div>
-  <div class="col-md-2"><button class="btn btn-success" type="submit">Adicionar</button></div>
+<h2>Humanos</h2>
+<form method="POST">
+  Nome: <input name="nome">
+  Custo: <input type="number" step="0.01" name="custo">
+  <button type="submit">Adicionar</button>
 </form>
-<table class="table table-striped">
-  <thead><tr><th>Nome</th><th>Custo</th><th>Ações</th></tr></thead>
-  <tbody>
-  {% for it in lista %}
+<table>
+  <tr><th>Nome</th><th>Custo</th><th>Ações</th></tr>
+  {% for h in humanos %}
     <tr>
-      <td>{{ it.nome }}</td>
-      <td>{{ it.custo }}</td>
-      <td>
-        <a class="btn btn-sm btn-primary" href="{{ url_for('humanos_edit', id=it.id) }}">Editar</a>
-        <form method="POST" action="{{ url_for('humanos_delete', id=it.id) }}" style="display:inline">
-          <button class="btn btn-sm btn-danger" type="submit">Apagar</button>
-        </form>
-      </td>
+      <td>{{h.nome}}</td><td>{{h.custo}}</td>
+      <td><a href="/humanos/delete/{{h.id}}">❌</a></td>
     </tr>
   {% endfor %}
-  </tbody>
 </table>
 {% endblock %}

@@ -1,28 +1,18 @@
-
 {% extends "base.html" %}
 {% block content %}
 <h2>Misturas</h2>
-<form method="POST" class="row g-3 mb-3">
-  <div class="col-md-6"><input class="form-control" name="nome" placeholder="Nome da mistura (e.g. Desgaste)" required></div>
-  <div class="col-md-3"><input class="form-control" name="baridade" placeholder="Baridade (e.g. 2.4)" required></div>
-  <div class="col-md-3"><button class="btn btn-success" type="submit">Adicionar</button></div>
+<form method="POST">
+  Nome: <input name="nome">
+  Baridade: <input type="number" step="0.01" name="baridade">
+  <button type="submit">Adicionar</button>
 </form>
-
-<table class="table table-striped">
-  <thead><tr><th>Mistura</th><th>Baridade</th><th>Ações</th></tr></thead>
-  <tbody>
-  {% for it in lista %}
+<table>
+  <tr><th>Nome</th><th>Baridade</th><th>Ações</th></tr>
+  {% for m in misturas %}
     <tr>
-      <td>{{ it.nome }}</td>
-      <td>{{ it.baridade }}</td>
-      <td>
-        <a class="btn btn-sm btn-primary" href="{{ url_for('misturas_edit', id=it.id) }}">Editar</a>
-        <form method="POST" action="{{ url_for('misturas_delete', id=it.id) }}" style="display:inline">
-          <button class="btn btn-sm btn-danger" type="submit">Apagar</button>
-        </form>
-      </td>
+      <td>{{m.nome}}</td><td>{{m.baridade}}</td>
+      <td><a href="/misturas/delete/{{m.id}}">❌</a></td>
     </tr>
   {% endfor %}
-  </tbody>
 </table>
 {% endblock %}

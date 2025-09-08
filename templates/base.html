@@ -1,60 +1,19 @@
-
 <!DOCTYPE html>
-<html lang="pt">
+<html>
 <head>
-  <meta charset="UTF-8">
   <title>Sistema de Cálculo</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-  <style>
-    body { background-color: #f8f9fa; }
-    .menu-excel {
-      background: #e9ecef;
-      border-bottom: 2px solid #ccc;
-      padding: 0.5rem 1rem;
-    }
-    .menu-excel .nav-link {
-      color: #333;
-      font-weight: 500;
-      border: 1px solid #ccc;
-      border-bottom: none;
-      margin-right: 5px;
-      border-radius: 0.3rem 0.3rem 0 0;
-      background: #f8f9fa;
-    }
-    .menu-excel .nav-link.active {
-      background: #0d6efd;
-      color: #fff;
-      border-color: #0d6efd #0d6efd #fff;
-    }
-    .conteudo {
-      background: #fff;
-      border: 1px solid #ccc;
-      border-radius: 0 0.3rem 0.3rem 0.3rem;
-      padding: 2rem;
-      margin-top: -1px;
-    }
-  </style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-  <div class="menu-excel">
-    <ul class="nav nav-tabs">
-      <li class="nav-item"><a class="nav-link {% if request.path == '/' %}active{% endif %}" href="/"><i class="bi bi-calculator"></i> Cálculo</a></li>
-      <li class="nav-item"><a class="nav-link {% if request.path == '/equipamentos' %}active{% endif %}" href="/equipamentos"><i class="bi bi-truck"></i> Equipamentos</a></li>
-      <li class="nav-item"><a class="nav-link {% if request.path == '/humanos' %}active{% endif %}" href="/humanos"><i class="bi bi-person"></i> Meios Humanos</a></li>
-      <li class="nav-item"><a class="nav-link {% if request.path == '/materiais' %}active{% endif %}" href="/materiais"><i class="bi bi-box-seam"></i> Materiais</a></li>
-      <li class="nav-item"><a class="nav-link {% if request.path == '/misturas' %}active{% endif %}" href="/misturas"><i class="bi bi-bezier"></i> Misturas</a></li>
-      <li class="nav-item"><a class="nav-link {% if request.path == '/diversos' %}active{% endif %}" href="/diversos"><i class="bi bi-gear"></i> Diversos</a></li>
-    </ul>
-  </div>
-  <div class="conteudo container">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for cat, msg in messages %}
-          <div class="alert alert-{{ cat }} mt-2">{{ msg }}</div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
+  <nav>
+    <a href="{{ url_for('index') }}">📊 Cálculo</a>
+    <a href="{{ url_for('equipamentos') }}">🔧 Equipamentos</a>
+    <a href="{{ url_for('humanos') }}">👷 Humanos</a>
+    <a href="{{ url_for('materiais') }}">⛏️ Materiais</a>
+    <a href="{{ url_for('misturas') }}">🧪 Misturas</a>
+    <a href="{{ url_for('diversos') }}">⚙️ Diversos</a>
+  </nav>
+  <div class="content">
     {% block content %}{% endblock %}
   </div>
 </body>

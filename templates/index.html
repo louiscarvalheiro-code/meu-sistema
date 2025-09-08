@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Cálculo</h2>
+<form method="POST" action="/calcular">
+  <label>Mistura:</label>
+  <select name="mistura">
+    {% for m in misturas %}
+      <option value="{{m.id}}">{{m.nome}}</option>
+    {% endfor %}
+  </select><br>
+  <label>Espessura (m):</label><input type="number" step="0.01" name="espessura"><br>
+  <label>Produção diária (ton):</label><input type="number" step="1" name="producao"><br>
+  <label>Distância (km):</label><input type="number" step="1" name="distancia"><br>
+  <label>Dificuldade (1-5):</label><input type="number" step="1" name="dificuldade"><br>
+  <label>Lucro (%):</label><input type="number" step="0.1" name="lucro"><br>
+  <button type="submit">Calcular</button>
+</form>
+{% if resultado %}
+  <h3>Resultado: {{resultado}}</h3>
+{% endif %}
+{% endblock %}
