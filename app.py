@@ -5,9 +5,7 @@ app = Flask(__name__)
 @app.route("/", methods=["GET", "POST"])
 def calculo():
     resultado = None
-
     if request.method == "POST":
-        # Ler os valores do formulário
         mistura = request.form["mistura"]
         espessura = float(request.form["espessura"])
         producao = float(request.form["producao"])
@@ -15,7 +13,7 @@ def calculo():
         dificuldade = int(request.form["dificuldade"])
         lucro = float(request.form["lucro"])
 
-        # Valores fictícios só para exemplo (estes virão da BD futuramente)
+        # Valores fictícios por agora
         custo_central = 1000
         custo_equipamentos = 2000
         custo_humanos = 1500
@@ -25,7 +23,6 @@ def calculo():
         n_ciclos = 5
         baridade = 2.4
 
-        # Fórmula simplificada
         fixo_por_ton = (custo_central + custo_equipamentos + custo_humanos) / producao
         variavel_por_ton = custo_fabrico + custo_mistura + (custo_transporte / (30 * n_ciclos))
         custo_base = (fixo_por_ton + variavel_por_ton) * baridade
@@ -34,6 +31,26 @@ def calculo():
         resultado = round(preco_final, 2)
 
     return render_template("calculo.html", resultado=resultado)
+
+@app.route("/equipamentos")
+def equipamentos():
+    return render_template("equipamentos.html")
+
+@app.route("/humanos")
+def humanos():
+    return render_template("humanos.html")
+
+@app.route("/materiais")
+def materiais():
+    return render_template("materiais.html")
+
+@app.route("/misturas")
+def misturas():
+    return render_template("misturas.html")
+
+@app.route("/diversos")
+def diversos():
+    return render_template("diversos.html")
 
 if __name__ == "__main__":
     app.run(debug=True)
