@@ -1,18 +1,24 @@
-{% extends "base.html" %}
+
+{% extends 'base.html' %}
 {% block content %}
-<h2>Diversos</h2>
-<form method="POST">
-  Nome: <input name="nome">
-  Valor: <input type="number" step="0.01" name="valor">
-  <button type="submit">Adicionar</button>
+<h1>Diversos</h1>
+<form method="POST" class="row g-3 mb-3">
+  <div class="col-md-6"><input name="nome" class="form-control" placeholder="Nome (ex: Custo Central, Custo Fabrico, Custo Transporte, Nciclos)" required></div>
+  <div class="col-md-4"><input name="valor" class="form-control" placeholder="Valor (€)" required></div>
+  <div class="col-md-2"><button class="btn btn-success">Adicionar</button></div>
 </form>
-<table>
-  <tr><th>Nome</th><th>Valor</th><th>Ações</th></tr>
-  {% for d in diversos %}
-    <tr>
-      <td>{{d.nome}}</td><td>{{d.valor}}</td>
-      <td><a href="/diversos/delete/{{d.id}}">❌</a></td>
-    </tr>
-  {% endfor %}
+<table class="table table-striped">
+  <thead><tr><th>Nome</th><th>Valor</th><th>Ações</th></tr></thead>
+  <tbody>
+    {% for it in lista %}
+      <tr><td>{{ it.nome }}</td><td>{{ it.valor }}</td>
+        <td>
+          <form method="POST" action="{{ url_for('diversos_delete', id=it.id) }}" style="display:inline">
+            <button class="btn btn-sm btn-danger">Remover</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
 </table>
 {% endblock %}
