@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Composição da Mistura: {{ mistura.nome }}</h2>
+<table class="table table-bordered">
+    <tr><th>Material</th><th>Percentagem (%)</th></tr>
+    {% for mm in mistura.materiais %}
+    <tr><td>{{ mm.material.nome }}</td><td>{{ mm.percentagem }}</td></tr>
+    {% endfor %}
+</table>
+
+<h4>Adicionar Material</h4>
+<form method="post">
+    <div class="mb-3">
+        <label>Material</label>
+        <select name="material_id" class="form-control">
+            {% for m in materiais %}
+            <option value="{{ m.id }}">{{ m.nome }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="mb-3">
+        <label>Percentagem (%)</label>
+        <input type="number" step="0.1" name="percentagem" class="form-control" required>
+    </div>
+    <button class="btn btn-primary" type="submit">Adicionar</button>
+</form>
+{% endblock %}

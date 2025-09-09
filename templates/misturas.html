@@ -1,18 +1,14 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 {% block content %}
 <h2>Misturas</h2>
-<form method="POST">
-  Nome: <input name="nome">
-  Baridade: <input type="number" step="0.01" name="baridade">
-  <button type="submit">Adicionar</button>
-</form>
-<table>
-  <tr><th>Nome</th><th>Baridade</th><th>Ações</th></tr>
-  {% for m in misturas %}
+<table class="table table-bordered">
+    <tr><th>Nome</th><th>Baridade</th><th>Ações</th></tr>
+    {% for m in misturas %}
     <tr>
-      <td>{{m.nome}}</td><td>{{m.baridade}}</td>
-      <td><a href="/misturas/delete/{{m.id}}">❌</a></td>
+        <td>{{ m.nome }}</td>
+        <td>{{ m.baridade }}</td>
+        <td><a href="/misturas/{{m.id}}/composicao" class="btn btn-sm btn-secondary">Editar Composição</a></td>
     </tr>
-  {% endfor %}
+    {% endfor %}
 </table>
 {% endblock %}

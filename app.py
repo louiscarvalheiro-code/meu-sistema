@@ -1,157 +1,122 @@
 from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
+import os
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Configuração dinâmica do banco de dados
+db_url = os.getenv("DATABASE_URL")
+if db_url:
+    if db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+    app.config["SQLALCHEMY_DATABASE_URI"] = db_url
+else:
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
+
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
 
+# ---- MODELOS ----
 class Equipamento(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    nome = db.Column(db.String(100))
-    custo = db.Column(db.Float)
+    nome = db.Column(db.String(100), nullable=False)
+    custo = db.Column(db.Float, nullable=False)
 
 class Humano(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    nome = db.Column(db.String(100))
-    custo = db.Column(db.Float)
+    nome = db.Column(db.String(100), nullable=False)
+    custo = db.Column(db.Float, nullable=False)
 
 class Material(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    nome = db.Column(db.String(100))
-    preco = db.Column(db.Float)
-    transporte = db.Column(db.Float)
-
-class Mistura(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    nome = db.Column(db.String(100))
-    baridade = db.Column(db.Float)
+    nome = db.Column(db.String(100), nullable=False)
+    preco = db.Column(db.Float, nullable=False)
+    transporte = db.Column(db.Float, nullable=False)
 
 class Diverso(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    nome = db.Column(db.String(100))
-    valor = db.Column(db.Float)
+    descricao = db.Column(db.String(100), nullable=False)
+    custo = db.Column(db.Float, nullable=False)
 
-with app.app_context():
-    db.create_all()
+class Mistura(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(100), nullable=False)
+    baridade = db.Column(db.Float, nullable=False)
 
+class MisturaMaterial(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    mistura_id = db.Column(db.Integer, db.ForeignKey("mistura.id"))
+    material_id = db.Column(db.Integer, db.ForeignKey("material.id"))
+    percentagem = db.Column(db.Float, nullable=False)
+
+    mistura = db.relationship("Mistura", backref="materiais")
+    material = db.relationship("Material")
+
+# ---- ROTAS ----
 @app.route("/")
 def index():
+    return redirect(url_for("calculo"))
+
+@app.route("/calculo", methods=["GET", "POST"])
+def calculo():
+    resultado = None
+    if request.method == "POST":
+        try:
+            espessura = float(request.form["espessura"])
+            producao = float(request.form["producao"])
+            distancia = float(request.form["distancia"])
+            dificuldade = int(request.form["dificuldade"])
+            lucro = float(request.form["lucro"]) / 100
+            mistura_id = int(request.form["mistura_id"])
+
+            # Custos base
+            custo_central = sum(d.custo for d in Diverso.query.all())
+            custo_equip = sum(e.custo for e in Equipamento.query.all())
+            custo_humano = sum(h.custo for h in Humano.query.all())
+
+            # Mistura escolhida
+            mistura = Mistura.query.get(mistura_id)
+            custo_mistura = 0
+            for mm in mistura.materiais:
+                custo_mistura += (mm.percentagem/100) * (mm.material.preco + mm.material.transporte)
+
+            custo_fabrico = custo_mistura * espessura
+
+            custo_unitario = ((custo_central + custo_equip + custo_humano) / producao) + custo_fabrico
+            custo_unitario *= mistura.baridade
+            custo_unitario *= (1 + lucro)
+
+            resultado = round(custo_unitario, 2)
+        except Exception as e:
+            resultado = f"Erro: {e}"
+
     misturas = Mistura.query.all()
-    return render_template("index.html", misturas=misturas)
+    return render_template("calculo.html", misturas=misturas, resultado=resultado)
 
-@app.route("/calcular", methods=["POST"])
-def calcular():
-    mistura_id = int(request.form["mistura"])
-    espessura = float(request.form["espessura"])
-    producao = float(request.form["producao"])
-    distancia = float(request.form["distancia"])
-    dificuldade = int(request.form["dificuldade"])
-    lucro = float(request.form["lucro"])
-
-    custo_central = sum([d.valor for d in Diverso.query.filter(Diverso.nome=="Central").all()])
-    custo_fabrico = sum([d.valor for d in Diverso.query.filter(Diverso.nome=="Fabrico").all()])
-    custo_equip = sum([e.custo for e in Equipamento.query.all()])
-    custo_humanos = sum([h.custo for h in Humano.query.all()])
-    custo_materiais = sum([m.preco for m in Material.query.all()])
-    custo_transporte = sum([m.transporte for m in Material.query.all()])
-
-    mistura = Mistura.query.get(mistura_id)
-    baridade = mistura.baridade if mistura else 1.0
-
-    Nciclos = 5
-    custo = (((custo_central + custo_equip + custo_humanos) / producao) +
-             (custo_fabrico + custo_materiais + (custo_transporte / (30 * Nciclos))))
-    custo_final = custo * baridade * (1 + lucro/100)
-
-    return render_template("index.html", misturas=Mistura.query.all(),
-                           resultado=round(custo_final,2))
-
-@app.route("/equipamentos", methods=["GET","POST"])
-def equipamentos():
-    if request.method == "POST":
-        nome = request.form["nome"]
-        custo = float(request.form["custo"])
-        db.session.add(Equipamento(nome=nome, custo=custo))
-        db.session.commit()
-        return redirect(url_for("equipamentos"))
-    return render_template("equipamentos.html", equipamentos=Equipamento.query.all())
-
-@app.route("/equipamentos/delete/<int:id>")
-def delete_equip(id):
-    e = Equipamento.query.get(id)
-    db.session.delete(e)
-    db.session.commit()
-    return redirect(url_for("equipamentos"))
-
-@app.route("/humanos", methods=["GET","POST"])
-def humanos():
-    if request.method == "POST":
-        nome = request.form["nome"]
-        custo = float(request.form["custo"])
-        db.session.add(Humano(nome=nome, custo=custo))
-        db.session.commit()
-        return redirect(url_for("humanos"))
-    return render_template("humanos.html", humanos=Humano.query.all())
-
-@app.route("/humanos/delete/<int:id>")
-def delete_humano(id):
-    h = Humano.query.get(id)
-    db.session.delete(h)
-    db.session.commit()
-    return redirect(url_for("humanos"))
-
-@app.route("/materiais", methods=["GET","POST"])
+@app.route("/materiais")
 def materiais():
-    if request.method == "POST":
-        nome = request.form["nome"]
-        preco = float(request.form["preco"])
-        transporte = float(request.form["transporte"])
-        db.session.add(Material(nome=nome, preco=preco, transporte=transporte))
-        db.session.commit()
-        return redirect(url_for("materiais"))
-    return render_template("materiais.html", materiais=Material.query.all())
+    materiais = Material.query.all()
+    return render_template("materiais.html", materiais=materiais)
 
-@app.route("/materiais/delete/<int:id>")
-def delete_material(id):
-    m = Material.query.get(id)
-    db.session.delete(m)
-    db.session.commit()
-    return redirect(url_for("materiais"))
-
-@app.route("/misturas", methods=["GET","POST"])
+@app.route("/misturas")
 def misturas():
+    misturas = Mistura.query.all()
+    return render_template("misturas.html", misturas=misturas)
+
+@app.route("/misturas/<int:id>/composicao", methods=["GET", "POST"])
+def composicao(id):
+    mistura = Mistura.query.get_or_404(id)
+    materiais = Material.query.all()
     if request.method == "POST":
-        nome = request.form["nome"]
-        baridade = float(request.form["baridade"])
-        db.session.add(Mistura(nome=nome, baridade=baridade))
+        material_id = int(request.form["material_id"])
+        percentagem = float(request.form["percentagem"])
+        mm = MisturaMaterial(mistura_id=id, material_id=material_id, percentagem=percentagem)
+        db.session.add(mm)
         db.session.commit()
-        return redirect(url_for("misturas"))
-    return render_template("misturas.html", misturas=Mistura.query.all())
-
-@app.route("/misturas/delete/<int:id>")
-def delete_mistura(id):
-    m = Mistura.query.get(id)
-    db.session.delete(m)
-    db.session.commit()
-    return redirect(url_for("misturas"))
-
-@app.route("/diversos", methods=["GET","POST"])
-def diversos():
-    if request.method == "POST":
-        nome = request.form["nome"]
-        valor = float(request.form["valor"])
-        db.session.add(Diverso(nome=nome, valor=valor))
-        db.session.commit()
-        return redirect(url_for("diversos"))
-    return render_template("diversos.html", diversos=Diverso.query.all())
-
-@app.route("/diversos/delete/<int:id>")
-def delete_diverso(id):
-    d = Diverso.query.get(id)
-    db.session.delete(d)
-    db.session.commit()
-    return redirect(url_for("diversos"))
+        return redirect(url_for("composicao", id=id))
+    return render_template("composicao.html", mistura=mistura, materiais=materiais)
 
 if __name__ == "__main__":
-    app.run(debug=True, port=10000)
+    with app.app_context():
+        db.create_all()
+    app.run(debug=True)

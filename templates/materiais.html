@@ -1,19 +1,10 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 {% block content %}
 <h2>Materiais</h2>
-<form method="POST">
-  Nome: <input name="nome">
-  Preço: <input type="number" step="0.01" name="preco">
-  Transporte: <input type="number" step="0.01" name="transporte">
-  <button type="submit">Adicionar</button>
-</form>
-<table>
-  <tr><th>Nome</th><th>Preço</th><th>Transporte</th><th>Ações</th></tr>
-  {% for m in materiais %}
-    <tr>
-      <td>{{m.nome}}</td><td>{{m.preco}}</td><td>{{m.transporte}}</td>
-      <td><a href="/materiais/delete/{{m.id}}">❌</a></td>
-    </tr>
-  {% endfor %}
+<table class="table table-bordered">
+    <tr><th>Nome</th><th>Preço</th><th>Transporte</th></tr>
+    {% for m in materiais %}
+    <tr><td>{{ m.nome }}</td><td>{{ m.preco }}</td><td>{{ m.transporte }}</td></tr>
+    {% endfor %}
 </table>
 {% endblock %}
