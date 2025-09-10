@@ -2,11 +2,12 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 import os
+from sqlalchemy import func
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY','uma-chave-secreta-local')
 
-# Configuração dinâmica do DB (Postgres em PRODUÇÃO via DATABASE_URL, senão SQLite local)
+# DB config: use DATABASE_URL (Postgres) if present, else SQLite
 db_url = os.getenv('DATABASE_URL')
 if db_url:
     if db_url.startswith('postgres://'):
@@ -18,16 +19,18 @@ else:
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-# ---------- MODELS ----------
+# Models
 class Equipamento(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(120), nullable=False)
     custo = db.Column(db.Float, nullable=False, default=0.0)
+    quantidade = db.Column(db.Integer, nullable=False, default=1)
 
 class Humano(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(120), nullable=False)
     custo = db.Column(db.Float, nullable=False, default=0.0)
+    quantidade = db.Column(db.Integer, nullable=False, default=1)
 
 class Material(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -53,13 +56,12 @@ class MisturaMaterial(db.Model):
     mistura = db.relationship('Mistura', backref=db.backref('componentes', cascade='all, delete-orphan'))
     material = db.relationship('Material')
 
-# Garantir criação das tabelas (aplica em cada request se necessário)
+# Ensure tables exist
 @app.before_request
 def create_tables():
     db.create_all()
 
-# ---------- Utils ----------
-from sqlalchemy import func
+# Utils
 def total_percentagem_mistura(mistura_id):
     total = db.session.query(func.coalesce(func.sum(MisturaMaterial.percentagem), 0.0)).filter_by(mistura_id=mistura_id).scalar()
     return float(total or 0.0)
@@ -73,7 +75,7 @@ def custo_mistura_por_ton(mistura_id):
             custo += (c.percentagem/100.0) * ((mat.preco or 0.0) + (mat.transporte or 0.0))
     return round(custo,6)
 
-# ---------- ROTAS: Cálculo ----------
+# Routes - Calculo
 @app.route('/', methods=['GET','POST'])
 @app.route('/calculo', methods=['GET','POST'])
 def calculo():
@@ -85,36 +87,44 @@ def calculo():
             mistura_id = int(request.form.get('mistura_id') or 0)
             espessura = float(request.form.get('espessura') or 0)
             producao = float(request.form.get('producao') or 1)
-            distancia = float(request.form.get('distancia') or 0)
+            nc = float(request.form.get('nc') or 5)
             dificuldade = int(request.form.get('dificuldade') or 1)
             lucro = float(request.form.get('lucro') or 0)
 
-            custo_central = db.session.query(func.coalesce(func.sum(Diverso.valor),0)).scalar()
-            soma_equip = db.session.query(func.coalesce(func.sum(Equipamento.custo),0)).scalar()
-            soma_humanos = db.session.query(func.coalesce(func.sum(Humano.custo),0)).scalar()
+            # Cc = Custo Central diário (Diverso named 'Custo Central')
+            cc_row = Diverso.query.filter_by(nome='Custo Central').first()
+            Cc = cc_row.valor if cc_row else 0.0
+
+            # Cf = Custo de fabrico por tonelada (Diverso named 'Custo Fabrico')
+            cf_row = Diverso.query.filter_by(nome='Custo Fabrico').first()
+            Cf = cf_row.valor if cf_row else 0.0
+
+            soma_equip = db.session.query(func.coalesce(func.sum(Equipamento.custo * Equipamento.quantidade),0)).scalar()
+            soma_humanos = db.session.query(func.coalesce(func.sum(Humano.custo * Humano.quantidade),0)).scalar()
 
             custo_mistura = custo_mistura_por_ton(mistura_id) if mistura_id else 0.0
 
-            # Nciclos como Diverso se definido, senão 5
-            nc = 5.0
-            nc_row = Diverso.query.filter_by(nome='Nciclos').first()
-            if nc_row:
-                try:
-                    nc = float(nc_row.valor)
-                    if nc <= 0: nc = 5.0
-                except: nc = 5.0
+            # Custo transporte total from Diverso named 'Custo Transporte' if exists
+            ct_row = Diverso.query.filter_by(nome='Custo Transporte').first()
+            CustoTransporte = ct_row.valor if ct_row else 0.0
 
-            fixa_por_ton = (custo_central + soma_equip + soma_humanos) / (producao if producao>0 else 1)
-            variavel_por_ton = (Diverso.query.filter_by(nome='Custo Fabrico').first().valor if Diverso.query.filter_by(nome='Custo Fabrico').first() else 0.0) + custo_mistura + ( (Diverso.query.filter_by(nome='Custo Transporte').first().valor if Diverso.query.filter_by(nome='Custo Transporte').first() else 0.0) / (30.0 * nc) )
+            fixa_por_ton = (Cc + soma_equip + soma_humanos) / (producao if producao>0 else 1)
+            variavel_por_ton = Cf + custo_mistura + (CustoTransporte / (30.0 * nc if nc>0 else 5.0))
 
             mistura = Mistura.query.get(mistura_id) if mistura_id else None
             bar = mistura.baridade if mistura else 1.0
 
-            custo_base = (fixa_por_ton + variavel_por_ton) * bar
-            preco_final = custo_base * (1 + lucro/100.0)
+            custo_unitario_por_ton = (fixa_por_ton + variavel_por_ton) * bar
+            # multiply by espessura as requested
+            custo_unitario_final = custo_unitario_por_ton * espessura
+            preco_final = custo_unitario_final * (1 + lucro/100.0)
 
             resultado = round(preco_final,2)
             detalhe = {
+                'espessura': espessura,
+                'producao': producao,
+                'nc': nc,
+                'lucro': lucro,
                 'fixa_por_ton': round(fixa_por_ton,3),
                 'variavel_por_ton': round(variavel_por_ton,3),
                 'custo_mistura': round(custo_mistura,3),
@@ -128,14 +138,15 @@ def calculo():
 
     return render_template('calculo.html', misturas=misturas, resultado=resultado, detalhe=detalhe)
 
-# ---------- ROTAS: Equipamentos ----------
+# Routes - Equipamentos
 @app.route('/equipamentos', methods=['GET','POST'])
 def equipamentos():
     if request.method == 'POST':
         nome = request.form.get('nome')
         custo = float(request.form.get('custo') or 0)
+        quantidade = int(request.form.get('quantidade') or 1)
         if nome:
-            db.session.add(Equipamento(nome=nome, custo=custo))
+            db.session.add(Equipamento(nome=nome, custo=custo, quantidade=quantidade))
             db.session.commit()
             flash('Equipamento adicionado.', 'success')
         return redirect(url_for('equipamentos'))
@@ -150,14 +161,15 @@ def equipamentos_delete(id):
     flash('Equipamento removido.', 'warning')
     return redirect(url_for('equipamentos'))
 
-# ---------- ROTAS: Humanos ----------
+# Routes - Humanos
 @app.route('/humanos', methods=['GET','POST'])
 def humanos():
     if request.method == 'POST':
         nome = request.form.get('nome')
         custo = float(request.form.get('custo') or 0)
+        quantidade = int(request.form.get('quantidade') or 1)
         if nome:
-            db.session.add(Humano(nome=nome, custo=custo))
+            db.session.add(Humano(nome=nome, custo=custo, quantidade=quantidade))
             db.session.commit()
             flash('Humano adicionado.', 'success')
         return redirect(url_for('humanos'))
@@ -172,7 +184,7 @@ def humanos_delete(id):
     flash('Humano removido.', 'warning')
     return redirect(url_for('humanos'))
 
-# ---------- ROTAS: Materiais ----------
+# Routes - Materiais
 @app.route('/materiais', methods=['GET','POST'])
 def materiais():
     if request.method == 'POST':
@@ -195,7 +207,7 @@ def materiais_delete(id):
     flash('Material removido.', 'warning')
     return redirect(url_for('materiais'))
 
-# ---------- ROTAS: Misturas e composição ----------
+# Routes - Misturas & composição
 @app.route('/misturas', methods=['GET','POST'])
 def misturas():
     if request.method == 'POST':
@@ -267,7 +279,7 @@ def misturas_composicao_delete(mistura_id, comp_id):
     flash('Componente removido.', 'warning')
     return redirect(url_for('misturas_composicao', mistura_id=mistura_id))
 
-# ---------- ROTAS: Diversos ----------
+# Routes - Diversos
 @app.route('/diversos', methods=['GET','POST'])
 def diversos():
     if request.method == 'POST':

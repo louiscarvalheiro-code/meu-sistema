@@ -22,8 +22,8 @@
     <input name="producao" type="number" step="1" class="form-control" required>
   </div>
   <div class="col-md-2">
-    <label class="form-label">Distância (km)</label>
-    <input name="distancia" type="number" step="1" class="form-control" required>
+    <label class="form-label">Nº Ciclos (Nc)</label>
+    <input name="nc" type="number" step="1" class="form-control" required value="5">
   </div>
   <div class="col-md-1">
     <label class="form-label">Dificuldade</label>
@@ -41,7 +41,8 @@
 {% if resultado is not none %}
   <div class="card mt-4">
     <div class="card-body">
-      <h5>Resultado: <span class="text-success">{{ resultado }} €/ton</span></h5>
+      <h5>Resultado: <span class="text-success">{{ resultado }} €</span></h5>
+      <p>Espessura: {{ detalhe.espessura }} m | Produção diária: {{ detalhe.producao }} t | Nº Ciclos: {{ detalhe.nc }} | Lucro: {{ detalhe.lucro }}%</p>
       <p>Fixos por ton: {{ detalhe.fixa_por_ton }} € | Variáveis por ton: {{ detalhe.variavel_por_ton }} € | Baridade: {{ detalhe.baridade }}</p>
       <hr>
       <h6>Detalhe</h6>

@@ -2,9 +2,10 @@
 {% extends 'base.html' %}
 {% block content %}
 <h1>Diversos</h1>
+<p>Defina custos importantes aqui. Para que o cálculo funcione corretamente, adicione pelo menos 'Custo Central' e 'Custo Fabrico' e opcionalmente 'Custo Transporte' e 'Nciclos'.</p>
 <form method="POST" class="row g-3 mb-3">
   <div class="col-md-6"><input name="nome" class="form-control" placeholder="Nome (ex: Custo Central, Custo Fabrico, Custo Transporte, Nciclos)" required></div>
-  <div class="col-md-4"><input name="valor" class="form-control" placeholder="Valor (€)" required></div>
+  <div class="col-md-4"><input name="valor" class="form-control" placeholder="Valor" required></div>
   <div class="col-md-2"><button class="btn btn-success">Adicionar</button></div>
 </form>
 <table class="table table-striped">
