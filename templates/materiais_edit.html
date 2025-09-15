@@ -1,11 +1,1 @@
-
-{% extends "base.html" %}
-{% block content %}
-<h2>Editar Material</h2>
-<form method="POST" class="row g-3">
-  <div class="col-md-4"><input class="form-control" name="nome" value="{{ item.nome }}" required></div>
-  <div class="col-md-3"><input class="form-control" name="preco" value="{{ item.preco }}" required></div>
-  <div class="col-md-3"><input class="form-control" name="transporte" value="{{ item.transporte }}" required></div>
-  <div class="col-md-2"><button class="btn btn-primary" type="submit">Guardar</button></div>
-</form>
-{% endblock %}
+{% extends 'base.html' %}{% block content %}<h1>Editar Material</h1>{% endblock %}

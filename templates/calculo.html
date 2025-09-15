@@ -39,14 +39,16 @@
 {% if resultado is not none %}
   <div class="card mt-4">
     <div class="card-body">
-      <h5>Resultado: <span class="text-success">{{ resultado }} €</span></h5>
+      <h5>Mistura: <strong>{{ mistura_nome }}</strong></h5>
+      <h5 class="mt-2">Resultado: <span class="text-success">{{ resultado }} €</span></h5>
       <p>Espessura: {{ detalhe.espessura }} m | Produção diária: {{ detalhe.producao }} t | Nº Ciclos: {{ detalhe.nc }} | Lucro: {{ detalhe.lucro }}%</p>
       <p>Fixos por ton: {{ detalhe.fixa_por_ton }} € | Variáveis por ton: {{ detalhe.variavel_por_ton }} € | Baridade: {{ detalhe.baridade }}</p>
       <hr>
       <h6>Detalhe</h6>
       <ul>
-        <li>Soma equipamentos: {{ detalhe.soma_equip }} €</li>
-        <li>Soma humanos: {{ detalhe.soma_humanos }} €</li>
+        <li>Soma equipamentos (€/h): {{ detalhe.soma_equip_hora }} €</li>
+        <li>Soma humanos (€/h): {{ detalhe.soma_humanos_hora }} €</li>
+        <li>Ce (€/dia): {{ detalhe.Ce }} € | Ch (€/dia): {{ detalhe.Ch }} €</li>
         <li>Custo mistura (€/t): {{ detalhe.custo_mistura }} €</li>
       </ul>
     </div>

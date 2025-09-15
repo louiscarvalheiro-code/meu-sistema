@@ -1,12 +1,1 @@
-{% extends "base.html" %}
-{% block content %}
-<h2>Resultado do Cálculo</h2>
-<ul class="list-group">
-  <li class="list-group-item">Espessura: {{ espessura }} m</li>
-  <li class="list-group-item">Produção Diária: {{ producao }} ton</li>
-  <li class="list-group-item">Nº de Ciclos: {{ ciclos }}</li>
-  <li class="list-group-item">Lucro: {{ lucro }} %</li>
-  <li class="list-group-item active">Preço Final: {{ resultado | round(2) }} €/ton</li>
-</ul>
-<a href="{{ url_for('calculo') }}" class="btn btn-secondary mt-3">Voltar</a>
-{% endblock %}
+{% extends 'base.html' %}{% block content %}<h1>Resultado</h1>{% endblock %}

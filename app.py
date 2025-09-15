@@ -23,20 +23,20 @@ db = SQLAlchemy(app)
 class Equipamento(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(140), nullable=False)
-    custo = db.Column(db.Float, nullable=False, default=0.0)
+    custo = db.Column(db.Float, nullable=False, default=0.0)  # €/hora
     quantidade = db.Column(db.Integer, nullable=False, default=1)
 
 class Humano(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(140), nullable=False)
-    custo = db.Column(db.Float, nullable=False, default=0.0)
+    custo = db.Column(db.Float, nullable=False, default=0.0)  # €/hora
     quantidade = db.Column(db.Integer, nullable=False, default=1)
 
 class Material(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(200), nullable=False)
-    preco = db.Column(db.Float, nullable=False, default=0.0)
-    transporte = db.Column(db.Float, nullable=False, default=0.0)
+    preco = db.Column(db.Float, nullable=False, default=0.0)   # €/ton
+    transporte = db.Column(db.Float, nullable=False, default=0.0)  # €/ton (kept for info)
 
 class Mistura(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -56,15 +56,14 @@ class Diverso(db.Model):
     nome = db.Column(db.String(140), nullable=False, unique=True)
     valor = db.Column(db.Float, nullable=False, default=0.0)
 
-# Ensure tables exist (simple approach)
+# Ensure tables exist and defaults
 @app.before_request
 def create_tables():
     db.create_all()
-    # ensure default Diversos exist
     defaults = {
-        'Custo Central': 1500.0,
-        'Custo Fabrico': 11.0,
-        'Custo Camiao Hora': 50.0,
+        'Custo Central': 880.88,
+        'Custo Fabrico': 11.01,
+        'Custo Camiao Hora': 48.56,
         'Nciclos': 5.0
     }
     for name, val in defaults.items():
@@ -93,6 +92,7 @@ def calculo():
     misturas = Mistura.query.order_by(Mistura.nome).all()
     resultado = None
     detalhe = None
+    mistura_nome = None
     if request.method == 'POST':
         try:
             mistura_id = int(request.form.get('mistura_id') or 0)
@@ -107,16 +107,21 @@ def calculo():
             cf = Diverso.query.filter_by(nome='Custo Fabrico').first().valor
             ct = Diverso.query.filter_by(nome='Custo Camiao Hora').first().valor
 
-            soma_equip = db.session.query(func.coalesce(func.sum(Equipamento.custo * Equipamento.quantidade), 0)).scalar() or 0.0
-            soma_humanos = db.session.query(func.coalesce(func.sum(Humano.custo * Humano.quantidade), 0)).scalar() or 0.0
+            soma_equip_hora = db.session.query(func.coalesce(func.sum(Equipamento.custo * Equipamento.quantidade), 0)).scalar() or 0.0
+            soma_humanos_hora = db.session.query(func.coalesce(func.sum(Humano.custo * Humano.quantidade), 0)).scalar() or 0.0
+
+            # convert hourly costs to daily (8 h)
+            Ce = soma_equip_hora * 8.0
+            Ch = soma_humanos_hora * 8.0
 
             custo_mistura = custo_mistura_por_ton(mistura_id) if mistura_id else 0.0
 
-            fixa_por_ton = (cc + soma_equip + soma_humanos) / (producao if producao>0 else 1)
+            fixa_por_ton = (cc + Ce + Ch) / (producao if producao>0 else 1)
             variavel_por_ton = cf + custo_mistura + (ct / (30.0 * nc if nc>0 else 5.0))
 
             mistura = Mistura.query.get(mistura_id) if mistura_id else None
             bar = mistura.baridade if mistura else 1.0
+            mistura_nome = mistura.nome if mistura else ''
 
             custo_unitario_por_ton = (fixa_por_ton + variavel_por_ton) * bar
             custo_unitario_final = custo_unitario_por_ton * espessura
@@ -132,12 +137,14 @@ def calculo():
                 'variavel_por_ton': round(variavel_por_ton,4),
                 'custo_mistura': round(custo_mistura,4),
                 'baridade': bar,
-                'soma_equip': round(soma_equip,4),
-                'soma_humanos': round(soma_humanos,4)
+                'Ce': round(Ce,4),
+                'Ch': round(Ch,4),
+                'soma_equip_hora': round(soma_equip_hora,4),
+                'soma_humanos_hora': round(soma_humanos_hora,4)
             }
         except Exception as e:
             flash(f'Erro no cálculo: {e}', 'danger')
-    return render_template('calculo.html', misturas=misturas, resultado=resultado, detalhe=detalhe)
+    return render_template('calculo.html', misturas=misturas, resultado=resultado, detalhe=detalhe, mistura_nome=mistura_nome)
 
 # ----- ROUTES: EQUIPAMENTOS -----
 @app.route('/equipamentos', methods=['GET', 'POST'])
@@ -153,6 +160,18 @@ def equipamentos():
         return redirect(url_for('equipamentos'))
     lista = Equipamento.query.order_by(Equipamento.nome).all()
     return render_template('equipamentos.html', lista=lista)
+
+@app.route('/equipamentos/edit/<int:id>', methods=['GET','POST'])
+def equipamentos_edit(id):
+    item = Equipamento.query.get_or_404(id)
+    if request.method == 'POST':
+        item.nome = request.form.get('nome')
+        item.custo = float(request.form.get('custo') or 0)
+        item.quantidade = int(request.form.get('quantidade') or 1)
+        db.session.commit()
+        flash('Equipamento atualizado.', 'success')
+        return redirect(url_for('equipamentos'))
+    return render_template('equipamentos_edit.html', item=item)
 
 @app.route('/equipamentos/delete/<int:id>', methods=['POST'])
 def equipamentos_delete(id):
@@ -177,6 +196,18 @@ def humanos():
     lista = Humano.query.order_by(Humano.nome).all()
     return render_template('humanos.html', lista=lista)
 
+@app.route('/humanos/edit/<int:id>', methods=['GET','POST'])
+def humanos_edit(id):
+    item = Humano.query.get_or_404(id)
+    if request.method == 'POST':
+        item.nome = request.form.get('nome')
+        item.custo = float(request.form.get('custo') or 0)
+        item.quantidade = int(request.form.get('quantidade') or 1)
+        db.session.commit()
+        flash('Meio humano atualizado.', 'success')
+        return redirect(url_for('humanos'))
+    return render_template('humanos_edit.html', item=item)
+
 @app.route('/humanos/delete/<int:id>', methods=['POST'])
 def humanos_delete(id):
     item = Humano.query.get_or_404(id)
@@ -199,6 +230,18 @@ def materiais():
         return redirect(url_for('materiais'))
     lista = Material.query.order_by(Material.nome).all()
     return render_template('materiais.html', lista=lista)
+
+@app.route('/materiais/edit/<int:id>', methods=['GET','POST'])
+def materiais_edit(id):
+    item = Material.query.get_or_404(id)
+    if request.method == 'POST':
+        item.nome = request.form.get('nome')
+        item.preco = float(request.form.get('preco') or 0)
+        item.transporte = float(request.form.get('transporte') or 0)
+        db.session.commit()
+        flash('Material atualizado.', 'success')
+        return redirect(url_for('materiais'))
+    return render_template('materiais_edit.html', item=item)
 
 @app.route('/materiais/delete/<int:id>', methods=['POST'])
 def materiais_delete(id):
