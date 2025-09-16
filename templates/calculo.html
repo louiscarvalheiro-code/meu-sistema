@@ -1,55 +1,18 @@
-
-{% extends 'base.html' %}
-{% block content %}
-<h1 class="mb-4">Cálculo</h1>
-<form method="POST" class="row g-3">
-  <div class="col-md-4">
-    <label class="form-label">Mistura</label>
-    <select name="mistura_id" class="form-select" required>
-      <option value="">-- Selecionar --</option>
-      {% for m in misturas %}
-        <option value="{{ m.id }}">{{ m.nome }}</option>
-      {% endfor %}
-    </select>
-  </div>
-  <div class="col-md-2">
-    <label class="form-label">Espessura (m)</label>
-    <input name="espessura" type="number" step="0.01" class="form-control" required>
-  </div>
-  <div class="col-md-2">
-    <label class="form-label">Produção diária (ton)</label>
-    <input name="producao" type="number" step="1" class="form-control" required>
-  </div>
-  <div class="col-md-2">
-    <label class="form-label">Nº Ciclos (Nc)</label>
-    <input name="nc" type="number" step="1" class="form-control" required value="5">
-  </div>
-  <div class="col-md-1">
-    <label class="form-label">Dificuldade</label>
-    <input name="dificuldade" type="number" min="1" max="5" class="form-control" required>
-  </div>
-  <div class="col-md-1">
-    <label class="form-label">Lucro %</label>
-    <input name="lucro" type="number" step="0.1" class="form-control" required>
-  </div>
-  <div class="col-12 text-end">
-    <button class="btn btn-primary btn-lg">Calcular</button>
-  </div>
+{% extends 'base.html' %}{% block content %}
+<h2>Cálculo</h2>
+<form method="post" class="row g-3 mb-3">
+  <div class="col"><select name="mistura" class="form-select">{% for m in misturas %}<option value="{{m.id}}">{{m.nome}}</option>{% endfor %}</select></div>
+  <div class="col"><input name="espessura" class="form-control" placeholder="Espessura (m)"></div>
+  <div class="col"><input name="producao" class="form-control" placeholder="Produção (ton/dia)"></div>
+  <div class="col"><input name="ciclos" class="form-control" placeholder="N ciclos"></div>
+  <div class="col"><input name="dificuldade" class="form-control" placeholder="Dificuldade (1-5)"></div>
+  <div class="col"><input name="lucro" class="form-control" placeholder="Lucro (%)"></div>
+  <div class="col"><button class="btn btn-success">Calcular</button></div>
 </form>
-{% if resultado is not none %}
-  <div class="card mt-4">
-    <div class="card-body">
-      <h5>Resultado: <span class="text-success">{{ resultado }} €</span></h5>
-      <p>Espessura: {{ detalhe.espessura }} m | Produção diária: {{ detalhe.producao }} t | Nº Ciclos: {{ detalhe.nc }} | Lucro: {{ detalhe.lucro }}%</p>
-      <p>Fixos por ton: {{ detalhe.fixa_por_ton }} € | Variáveis por ton: {{ detalhe.variavel_por_ton }} € | Baridade: {{ detalhe.baridade }}</p>
-      <hr>
-      <h6>Detalhe</h6>
-      <ul>
-        <li>Soma equipamentos: {{ detalhe.soma_equip }} €</li>
-        <li>Soma humanos: {{ detalhe.soma_humanos }} €</li>
-        <li>Custo mistura (€/t): {{ detalhe.custo_mistura }} €</li>
-      </ul>
-    </div>
-  </div>
+{% if resultado %}
+<div class="alert alert-info">
+  <b>Resultado:</b> {{resultado}} €/ton<br>
+  Mistura: {{dados.mistura}} | Espessura: {{dados.espessura}} m | Produção: {{dados.producao}} ton/dia | Ciclos: {{dados.ciclos}} | Lucro: {{dados.lucro}} %
+</div>
 {% endif %}
 {% endblock %}
