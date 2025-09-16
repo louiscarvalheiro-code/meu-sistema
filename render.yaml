@@ -1,8 +1,7 @@
-
 services:
   - type: web
-    name: sistema-calculo
+    name: meu-sistema
     env: python
+    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app
-    plan: free

@@ -1,18 +1,21 @@
-
 {% extends 'base.html' %}
 {% block content %}
 <h1>Materiais</h1>
 <form method="POST" class="row g-3 mb-3">
-  <div class="col-md-5"><input name="nome" class="form-control" placeholder="Material (e.g. Brita 1 Calcário)" required></div>
-  <div class="col-md-3"><input name="preco" class="form-control" placeholder="Preço (€/ton)" required></div>
-  <div class="col-md-3"><input name="transporte" class="form-control" placeholder="Transporte (€/ton)" required></div>
-  <div class="col-md-1"><button class="btn btn-success">Adicionar</button></div>
+  <div class="col-md-5"><input name="nome" class="form-control" placeholder="Nome do material" required></div>
+  <div class="col-md-3"><input name="preco" class="form-control" placeholder="Preço (€)" required></div>
+  <div class="col-md-2"><input name="transporte" class="form-control" placeholder="Transporte (€)" required value="0"></div>
+  <div class="col-md-2"><button class="btn btn-success">Adicionar</button></div>
 </form>
 <table class="table table-striped">
-  <thead><tr><th>Nome</th><th>Preço</th><th>Transporte</th><th>Ações</th></tr></thead>
+  <thead><tr><th>Nome</th><th>Preço</th><th>Transporte</th><th>Total</th><th>Ações</th></tr></thead>
   <tbody>
     {% for it in lista %}
-      <tr><td>{{ it.nome }}</td><td>{{ it.preco }}</td><td>{{ it.transporte }}</td>
+      <tr>
+        <td>{{ it.nome }}</td>
+        <td>{{ it.preco }}</td>
+        <td>{{ it.transporte }}</td>
+        <td>{{ (it.preco + it.transporte) | round(2) }}</td>
         <td>
           <form method="POST" action="{{ url_for('materiais_delete', id=it.id) }}" style="display:inline">
             <button class="btn btn-sm btn-danger">Remover</button>

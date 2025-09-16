@@ -1,20 +1,20 @@
-
 {% extends 'base.html' %}
 {% block content %}
 <h1>Diversos</h1>
-<p>Os valores pré-preenchidos são: Custo Central = 1500 €/dia, Custo Fabrico = 11 €/ton, Custo Camiao Hora = 50 €/h, Nciclos = 5.</p>
 <form method="POST" class="row g-3 mb-3">
-  <div class="col-md-6"><input name="nome" class="form-control" placeholder="Novo item (ex: Outro custo)" required></div>
-  <div class="col-md-4"><input name="valor" class="form-control" placeholder="Valor" required></div>
-  <div class="col-md-2"><button class="btn btn-success">Adicionar</button></div>
+  <div class="col-md-6"><input name="nome" class="form-control" placeholder="Nome" required></div>
+  <div class="col-md-3"><input name="valor" class="form-control" placeholder="Valor (€)" required></div>
+  <div class="col-md-3"><button class="btn btn-success">Adicionar</button></div>
 </form>
-<table class="table table-striped">
+<table class="table">
   <thead><tr><th>Nome</th><th>Valor</th><th>Ações</th></tr></thead>
   <tbody>
     {% for it in lista %}
-      <tr><td>{{ it.nome }}</td><td>{{ it.valor }}</td>
+      <tr>
+        <td>{{ it.nome }}</td>
+        <td>{{ it.valor }}</td>
         <td>
-          <a class="btn btn-sm btn-primary" href="{{ url_for('diversos_edit', id=it.id) }}">Editar</a>
+          <a class="btn btn-sm btn-secondary" href="{{ url_for('diversos_edit', id=it.id) }}">Editar</a>
           <form method="POST" action="{{ url_for('diversos_delete', id=it.id) }}" style="display:inline">
             <button class="btn btn-sm btn-danger">Remover</button>
           </form>

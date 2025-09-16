@@ -1,7 +1,8 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, make_response
 from flask_sqlalchemy import SQLAlchemy
 import os
 from sqlalchemy import func
+import pdfkit
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'uma-chave-secreta-local')
@@ -18,7 +19,7 @@ else:
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-# ----- MODELS -----
+# MODELS
 class Equipamento(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(140), nullable=False)
@@ -55,11 +56,9 @@ class Diverso(db.Model):
     nome = db.Column(db.String(140), nullable=False, unique=True)
     valor = db.Column(db.Float, nullable=False, default=0.0)
 
-# Ensure tables exist (simple approach)
 @app.before_request
 def create_tables():
     db.create_all()
-    # ensure default Diversos exist
     defaults = {
         'Custo Central': 1500.0,
         'Custo Fabrico': 11.0,
@@ -71,7 +70,6 @@ def create_tables():
             db.session.add(Diverso(nome=name, valor=val))
     db.session.commit()
 
-# ----- UTILITIES -----
 def total_percentagem_mistura(mistura_id):
     total = db.session.query(func.coalesce(func.sum(MisturaMaterial.percentagem), 0.0)).filter_by(mistura_id=mistura_id).scalar()
     return float(total or 0.0)
@@ -85,9 +83,9 @@ def custo_mistura_por_ton(mistura_id):
             custo += (c.percentagem / 100.0) * (mat.preco + mat.transporte)
     return round(custo, 6)
 
-# ----- ROUTES: CALCULO -----
+# CALCULO
 @app.route('/')
-@app.route('/calculo', methods=['GET', 'POST'])
+@app.route('/calculo', methods=['GET','POST'])
 def calculo():
     misturas = Mistura.query.order_by(Mistura.nome).all()
     resultado = None
@@ -101,20 +99,17 @@ def calculo():
             dificuldade = int(request.form.get('dificuldade') or 1)
             lucro = float(request.form.get('lucro') or 0)
 
-            # custos base
             cc = Diverso.query.filter_by(nome='Custo Central').first().valor
             cf = Diverso.query.filter_by(nome='Custo Fabrico').first().valor
             ct = Diverso.query.filter_by(nome='Custo Camiao Hora').first().valor
 
-            # equipamentos e humanos multiplicados por 8
             soma_equip = (db.session.query(func.coalesce(func.sum(Equipamento.custo * Equipamento.quantidade), 0)).scalar() or 0.0) * 8
             soma_humanos = (db.session.query(func.coalesce(func.sum(Humano.custo * Humano.quantidade), 0)).scalar() or 0.0) * 8
 
             custo_mistura = custo_mistura_por_ton(mistura_id) if mistura_id else 0.0
 
-            # fórmula
-            fixa_por_ton = (cc + soma_equip + soma_humanos) / (producao if producao > 0 else 1)
-            variavel_por_ton = cf + custo_mistura + (ct / (30.0 * (nc if nc > 0 else 5.0)))
+            fixa_por_ton = (cc + soma_equip + soma_humanos) / (producao if producao>0 else 1)
+            variavel_por_ton = cf + custo_mistura + (ct / (30.0 * (nc if nc>0 else 5.0)))
 
             mistura = Mistura.query.get(mistura_id) if mistura_id else None
             bar = mistura.baridade if mistura else 1.0
@@ -123,25 +118,70 @@ def calculo():
             custo_unitario_final = custo_unitario_por_ton * espessura
             preco_final = custo_unitario_final * (1 + lucro / 100.0)
 
-            resultado = round(preco_final, 4)
+            resultado = round(preco_final,4)
             detalhe = {
                 'espessura': espessura,
                 'producao': producao,
                 'nc': nc,
                 'lucro': lucro,
-                'fixa_por_ton': round(fixa_por_ton, 4),
-                'variavel_por_ton': round(variavel_por_ton, 4),
-                'custo_mistura': round(custo_mistura, 4),
+                'fixa_por_ton': round(fixa_por_ton,4),
+                'variavel_por_ton': round(variavel_por_ton,4),
+                'custo_mistura': round(custo_mistura,4),
                 'baridade': bar,
-                'soma_equip': round(soma_equip, 4),
-                'soma_humanos': round(soma_humanos, 4)
+                'soma_equip': round(soma_equip,4),
+                'soma_humanos': round(soma_humanos,4)
             }
         except Exception as e:
             flash(f'Erro no cálculo: {e}', 'danger')
     return render_template('calculo.html', misturas=misturas, resultado=resultado, detalhe=detalhe)
 
-# ----- ROUTES: EQUIPAMENTOS -----
-@app.route('/equipamentos', methods=['GET', 'POST'])
+# RELATORIO (HTML view)
+@app.route('/relatorio')
+def relatorio():
+    equipamentos = Equipamento.query.all()
+    humanos = Humano.query.all()
+    materiais = Material.query.all()
+    misturas = Mistura.query.all()
+    diversos = Diverso.query.all()
+    return render_template('relatorio.html',
+                           equipamentos=equipamentos,
+                           humanos=humanos,
+                           materiais=materiais,
+                           misturas=misturas,
+                           diversos=diversos)
+
+# RELATORIO PDF (server-side)
+@app.route('/relatorio/pdf')
+def relatorio_pdf():
+    equipamentos = Equipamento.query.all()
+    humanos = Humano.query.all()
+    materiais = Material.query.all()
+    misturas = Mistura.query.all()
+    diversos = Diverso.query.all()
+    rendered = render_template('relatorio_print.html',
+                               equipamentos=equipamentos,
+                               humanos=humanos,
+                               materiais=materiais,
+                               misturas=misturas,
+                               diversos=diversos)
+    try:
+        # pdfkit requires wkhtmltopdf binary available in the environment
+        options = {
+            'page-size': 'A4',
+            'encoding': "UTF-8",
+            'enable-local-file-access': None
+        }
+        pdf = pdfkit.from_string(rendered, False, options=options)
+        response = make_response(pdf)
+        response.headers['Content-Type'] = 'application/pdf'
+        response.headers['Content-Disposition'] = 'attachment; filename=relatorio_custos.pdf'
+        return response
+    except Exception as e:
+        flash('Erro a gerar PDF no servidor. Verifique se wkhtmltopdf está instalado.', 'danger')
+        return redirect(url_for('relatorio'))
+
+# CRUD routes (equipamentos, humanos, materiais, misturas, diversos) - minimal implementations
+@app.route('/equipamentos', methods=['GET','POST'])
 def equipamentos():
     if request.method == 'POST':
         nome = request.form.get('nome')
@@ -163,8 +203,7 @@ def equipamentos_delete(id):
     flash('Equipamento removido.', 'warning')
     return redirect(url_for('equipamentos'))
 
-# ----- ROUTES: HUMANOS -----
-@app.route('/humanos', methods=['GET', 'POST'])
+@app.route('/humanos', methods=['GET','POST'])
 def humanos():
     if request.method == 'POST':
         nome = request.form.get('nome')
@@ -186,8 +225,7 @@ def humanos_delete(id):
     flash('Humano removido.', 'warning')
     return redirect(url_for('humanos'))
 
-# ----- ROUTES: MATERIAIS -----
-@app.route('/materiais', methods=['GET', 'POST'])
+@app.route('/materiais', methods=['GET','POST'])
 def materiais():
     if request.method == 'POST':
         nome = request.form.get('nome')
@@ -209,8 +247,7 @@ def materiais_delete(id):
     flash('Material removido.', 'warning')
     return redirect(url_for('materiais'))
 
-# ----- ROUTES: MISTURAS & COMPOSIÇÃO -----
-@app.route('/misturas', methods=['GET', 'POST'])
+@app.route('/misturas', methods=['GET','POST'])
 def misturas():
     if request.method == 'POST':
         nome = request.form.get('nome')
@@ -231,7 +268,7 @@ def misturas_delete(id):
     flash('Mistura removida.', 'warning')
     return redirect(url_for('misturas'))
 
-@app.route('/misturas/<int:mistura_id>/composicao', methods=['GET', 'POST'])
+@app.route('/misturas/<int:mistura_id>/composicao', methods=['GET','POST'])
 def misturas_composicao(mistura_id):
     mistura = Mistura.query.get_or_404(mistura_id)
     materiais = Material.query.order_by(Material.nome).all()
@@ -259,20 +296,6 @@ def misturas_composicao(mistura_id):
     custo_mist = custo_mistura_por_ton(mistura_id)
     return render_template('misturas_composicao.html', mistura=mistura, materiais=materiais, componentes=componentes, total_pct=total_pct, custo_mist=custo_mist)
 
-@app.route('/misturas/<int:mistura_id>/composicao/edit/<int:comp_id>', methods=['POST'])
-def misturas_composicao_edit(mistura_id, comp_id):
-    comp = MisturaMaterial.query.get_or_404(comp_id)
-    nova = float(request.form.get('percentagem') or 0.0)
-    soma_outras = total_percentagem_mistura(mistura_id) - comp.percentagem
-    new_total = soma_outras + nova
-    if new_total > 100.0001:
-        flash(f'Não é possível definir {nova}%. Soma total = {new_total}% > 100%.', 'danger')
-        return redirect(url_for('misturas_composicao', mistura_id=mistura_id))
-    comp.percentagem = nova
-    db.session.commit()
-    flash('Percentagem atualizada.', 'success')
-    return redirect(url_for('misturas_composicao', mistura_id=mistura_id))
-
 @app.route('/misturas/<int:mistura_id>/composicao/delete/<int:comp_id>', methods=['POST'])
 def misturas_composicao_delete(mistura_id, comp_id):
     comp = MisturaMaterial.query.get_or_404(comp_id)
@@ -281,8 +304,7 @@ def misturas_composicao_delete(mistura_id, comp_id):
     flash('Componente removido.', 'warning')
     return redirect(url_for('misturas_composicao', mistura_id=mistura_id))
 
-# ----- ROUTES: DIVERSOS -----
-@app.route('/diversos', methods=['GET', 'POST'])
+@app.route('/diversos', methods=['GET','POST'])
 def diversos():
     if request.method == 'POST':
         nome = request.form.get('nome')
@@ -315,4 +337,4 @@ def diversos_delete(id):
     return redirect(url_for('diversos'))
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.getenv('PORT', 10000)), debug=True)
+    app.run(host='0.0.0.0', port=int(os.getenv('PORT', 10000)), debug=False)
