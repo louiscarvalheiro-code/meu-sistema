@@ -1,4 +1,3 @@
-
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 import os
@@ -102,18 +101,20 @@ def calculo():
             dificuldade = int(request.form.get('dificuldade') or 1)
             lucro = float(request.form.get('lucro') or 0)
 
-            # custos
+            # custos base
             cc = Diverso.query.filter_by(nome='Custo Central').first().valor
             cf = Diverso.query.filter_by(nome='Custo Fabrico').first().valor
             ct = Diverso.query.filter_by(nome='Custo Camiao Hora').first().valor
 
-            soma_equip = db.session.query(func.coalesce(func.sum(Equipamento.custo * Equipamento.quantidade), 0)).scalar() or 0.0
-            soma_humanos = db.session.query(func.coalesce(func.sum(Humano.custo * Humano.quantidade), 0)).scalar() or 0.0
+            # equipamentos e humanos multiplicados por 8
+            soma_equip = (db.session.query(func.coalesce(func.sum(Equipamento.custo * Equipamento.quantidade), 0)).scalar() or 0.0) * 8
+            soma_humanos = (db.session.query(func.coalesce(func.sum(Humano.custo * Humano.quantidade), 0)).scalar() or 0.0) * 8
 
             custo_mistura = custo_mistura_por_ton(mistura_id) if mistura_id else 0.0
 
-            fixa_por_ton = (cc + soma_equip + soma_humanos) / (producao if producao>0 else 1)
-            variavel_por_ton = cf + custo_mistura + (ct / (30.0 * nc if nc>0 else 5.0))
+            # fórmula
+            fixa_por_ton = (cc + soma_equip + soma_humanos) / (producao if producao > 0 else 1)
+            variavel_por_ton = cf + custo_mistura + (ct / (30.0 * (nc if nc > 0 else 5.0)))
 
             mistura = Mistura.query.get(mistura_id) if mistura_id else None
             bar = mistura.baridade if mistura else 1.0
@@ -128,12 +129,12 @@ def calculo():
                 'producao': producao,
                 'nc': nc,
                 'lucro': lucro,
-                'fixa_por_ton': round(fixa_por_ton,4),
-                'variavel_por_ton': round(variavel_por_ton,4),
-                'custo_mistura': round(custo_mistura,4),
+                'fixa_por_ton': round(fixa_por_ton, 4),
+                'variavel_por_ton': round(variavel_por_ton, 4),
+                'custo_mistura': round(custo_mistura, 4),
                 'baridade': bar,
-                'soma_equip': round(soma_equip,4),
-                'soma_humanos': round(soma_humanos,4)
+                'soma_equip': round(soma_equip, 4),
+                'soma_humanos': round(soma_humanos, 4)
             }
         except Exception as e:
             flash(f'Erro no cálculo: {e}', 'danger')
