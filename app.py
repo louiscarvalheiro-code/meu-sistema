@@ -35,8 +35,8 @@ class Humano(db.Model):
 class Material(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(200), nullable=False)
-    preco = db.Column(db.Float, nullable=False, default=0.0)
-    transporte = db.Column(db.Float, nullable=False, default=0.0)
+    preco = db.Column(db.Float, nullable=False, default=0.0)       # preço material €/ton
+    transporte = db.Column(db.Float, nullable=False, default=0.0)  # transporte €/ton
 
 class Mistura(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -77,12 +77,12 @@ def total_percentagem_mistura(mistura_id):
     return float(total or 0.0)
 
 def custo_mistura_por_ton(mistura_id):
-    # Mantemos Cm = 0 (placeholder). Função ainda calcula baseado em componentes se existirem.
     custo = 0.0
     comps = MisturaMaterial.query.filter_by(mistura_id=mistura_id).all()
     for c in comps:
         mat = c.material
         if mat:
+            # percentagem é em %, dividir por 100
             custo += (c.percentagem / 100.0) * (mat.preco + mat.transporte)
     return round(custo, 6)
 
@@ -115,8 +115,8 @@ def calculo():
             ce_daily = ce_hourly * 8.0
             ch_daily = ch_hourly * 8.0
 
-            # Cm placeholder = 0 (we keep compatibility)
-            custo_mistura = 0.0
+            # Cm computed from composition
+            custo_mistura = custo_mistura_por_ton(mistura_id) if mistura_id else 0.0
 
             fixa_por_ton = (cc + ce_daily + ch_daily) / (producao if producao>0 else 1)
             variavel_por_ton = cf + custo_mistura + (ct / (30.0 * nc if nc>0 else 5.0))

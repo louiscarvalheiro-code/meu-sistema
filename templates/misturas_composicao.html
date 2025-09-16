@@ -52,7 +52,7 @@
     {% if total_pct != 100 %}
       <div class="alert alert-warning">A soma das percentagens não é 100% — faltam {{ (100 - total_pct) | round(3) }}%.</div>
     {% endif %}
-    <p><strong>Custo da Mistura (€/t):</strong> {{ custo_mist }} €/t (nota: Cm usado = 0 no cálculo final)</p>
+    <p><strong>Custo da Mistura (€/t):</strong> {{ custo_mist }} €/t</p>
   </div>
 </div>
 {% endblock %}
