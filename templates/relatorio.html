@@ -14,41 +14,4 @@
   </tr>
   {% endfor %}
 </table>
-
-<h2>Humanos</h2>
-<table class="table table-bordered">
-  <tr><th>Nome</th><th>Custo unit.</th><th>Qtd</th><th>Total</th></tr>
-  {% for h in humanos %}
-  <tr>
-    <td>{{ h.nome }}</td>
-    <td>{{ h.custo }} €</td>
-    <td>{{ h.quantidade }}</td>
-    <td>{{ (h.custo * h.quantidade) | round(2) }} €</td>
-  </tr>
-  {% endfor %}
-</table>
-
-<h2>Materiais</h2>
-<table class="table table-bordered">
-  <tr><th>Nome</th><th>Preço</th><th>Transporte</th><th>Custo unitário</th></tr>
-  {% for m in materiais %}
-  <tr>
-    <td>{{ m.nome }}</td>
-    <td>{{ m.preco }} €</td>
-    <td>{{ m.transporte }} €</td>
-    <td>{{ (m.preco + m.transporte) | round(2) }} €</td>
-  </tr>
-  {% endfor %}
-</table>
-
-<h2>Diversos</h2>
-<table class="table table-bordered">
-  <tr><th>Nome</th><th>Valor</th></tr>
-  {% for d in diversos %}
-  <tr>
-    <td>{{ d.nome }}</td>
-    <td>{{ d.valor }} €</td>
-  </tr>
-  {% endfor %}
-</table>
 {% endblock %}
