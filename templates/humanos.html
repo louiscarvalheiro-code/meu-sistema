@@ -1,14 +1,15 @@
+
 {% extends 'base.html' %}
 {% block content %}
-<h1>Humanos</h1>
+<h1>Meios Humanos</h1>
 <form method="POST" class="row g-3 mb-3">
-  <div class="col-md-5"><input name="nome" class="form-control" placeholder="Nome" required></div>
-  <div class="col-md-3"><input name="custo" class="form-control" placeholder="Custo (€)" required></div>
+  <div class="col-md-5"><input name="nome" class="form-control" placeholder="Função (e.g. Operador)" required></div>
+  <div class="col-md-3"><input name="custo" class="form-control" placeholder="Custo por hora (€)" required></div>
   <div class="col-md-2"><input name="quantidade" class="form-control" placeholder="Quantidade" required value="1"></div>
   <div class="col-md-2"><button class="btn btn-success">Adicionar</button></div>
 </form>
 <table class="table table-striped">
-  <thead><tr><th>Nome</th><th>Custo unit.</th><th>Quantidade</th><th>Custo total</th><th>Ações</th></tr></thead>
+  <thead><tr><th>Nome</th><th>Custo/h</th><th>Quantidade</th><th>Custo total/h</th><th>Ações</th></tr></thead>
   <tbody>
     {% for it in lista %}
       <tr>
