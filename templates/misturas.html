@@ -10,6 +10,6 @@
 <table class="table"><thead><tr><th>Mistura</th><th>Baridade</th><th>Ações</th></tr></thead><tbody>
 {% for it in lista %}<tr><td>{{ it.nome }}</td><td>{{ it.baridade }}</td>
 <td><a class="btn btn-sm btn-secondary" href="{{ url_for('misturas_composicao', mistura_id=it.id) }}">Composição</a>
-<form method="POST" action="{{ url_for('misturas_delete', id=it.id) }}" style="display:inline"><button class="btn btn-sm btn-danger">Remover</button></form></td></tr>{% endfor %}
+<form method="POST" action="{{ url_for('misturas/<int:id>/delete', id=it.id) }}" style="display:inline"><button class="btn btn-sm btn-danger">Remover</button></form></td></tr>{% endfor %}
 </tbody></table>
 {% endblock %}
