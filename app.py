@@ -1,118 +1,118 @@
-from flask import Flask, render_template, request, redirect, url_for
+
+from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 import os
+from sqlalchemy import func
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
+app.secret_key = os.getenv('SECRET_KEY', 'uma-chave-secreta-local')
+
+db_url = os.getenv('DATABASE_URL')
+if db_url:
+    if db_url.startswith('postgres://'):
+        db_url = db_url.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-# -------------------------
-# MODELOS
-# -------------------------
 class Equipamento(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    nome = db.Column(db.String(100), nullable=False)
-    custo_hora = db.Column(db.Float, nullable=False)
-    quantidade = db.Column(db.Integer, default=1)
+    nome = db.Column(db.String(140), nullable=False)
+    custo = db.Column(db.Float, nullable=False, default=0.0)
+    quantidade = db.Column(db.Integer, nullable=False, default=1)
 
 class Humano(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    nome = db.Column(db.String(100), nullable=False)
-    custo_hora = db.Column(db.Float, nullable=False)
-    quantidade = db.Column(db.Integer, default=1)
+    nome = db.Column(db.String(140), nullable=False)
+    custo = db.Column(db.Float, nullable=False, default=0.0)
+    quantidade = db.Column(db.Integer, nullable=False, default=1)
 
 class Material(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    nome = db.Column(db.String(100), nullable=False)
-    preco = db.Column(db.Float, nullable=False)
-    transporte = db.Column(db.Float, default=0.0)
+    nome = db.Column(db.String(200), nullable=False)
+    preco = db.Column(db.Float, nullable=False, default=0.0)
+    transporte = db.Column(db.Float, nullable=False, default=0.0)
 
 class Mistura(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    nome = db.Column(db.String(100), nullable=False)
-    baridade = db.Column(db.Float, default=1.0)
+    nome = db.Column(db.String(140), nullable=False)
+    baridade = db.Column(db.Float, nullable=False, default=1.0)
 
 class MisturaMaterial(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    mistura_id = db.Column(db.Integer, db.ForeignKey('mistura.id'))
-    material_id = db.Column(db.Integer, db.ForeignKey('material.id'))
-    percentagem = db.Column(db.Float, nullable=False)
+    mistura_id = db.Column(db.Integer, db.ForeignKey('mistura.id'), nullable=False)
+    material_id = db.Column(db.Integer, db.ForeignKey('material.id'), nullable=False)
+    percentagem = db.Column(db.Float, nullable=False, default=0.0)
+    mistura = db.relationship('Mistura', backref=db.backref('componentes', cascade='all, delete-orphan'))
+    material = db.relationship('Material')
 
-class Diversos(db.Model):
+class Diverso(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    custo_central = db.Column(db.Float, default=880.88)
-    custo_fabrico = db.Column(db.Float, default=11.01)
-    custo_camião = db.Column(db.Float, default=48.56)
-    n_ciclos = db.Column(db.Integer, default=5)
+    nome = db.Column(db.String(140), nullable=False, unique=True)
+    valor = db.Column(db.Float, nullable=False, default=0.0)
 
-# -------------------------
-# ROTAS
-# -------------------------
-@app.route('/')
-def index():
-    return redirect(url_for('calculo'))
+@app.before_request
+def create_tables():
+    db.create_all()
+    # Diversos com valores fornecidos
+    defaults = {
+        'Custo Central': 880.88,
+        'Custo Fabrico': 11.0,
+        'Custo Camião Hora': 48.56,
+        'Nciclos': 5.0
+    }
+    for name, val in defaults.items():
+        if not Diverso.query.filter_by(nome=name).first():
+            db.session.add(Diverso(nome=name, valor=val))
 
-@app.route('/calculo', methods=['GET','POST'])
-def calculo():
-    misturas = Mistura.query.all()
-    diversos = Diversos.query.first()
-    resultado = None
-    if request.method == 'POST':
-        mistura_id = int(request.form['mistura'])
-        espessura = float(request.form['espessura'])
-        producao_diaria = float(request.form['producao'])
-        n_ciclos = int(request.form['ciclos'])
-        lucro = float(request.form['lucro'])/100
-
-        mistura = Mistura.query.get(mistura_id)
-
-        Ce = sum([e.custo_hora * e.quantidade for e in Equipamento.query.all()]) * 8
-        Ch = sum([h.custo_hora * h.quantidade for h in Humano.query.all()]) * 8
-
-        Cc = diversos.custo_central
-        Cf = diversos.custo_fabrico
-        Ct = diversos.custo_camião
-
-        comps = MisturaMaterial.query.filter_by(mistura_id=mistura_id).all()
-        Cm = 0
-        for c in comps:
-            mat = Material.query.get(c.material_id)
-            if mat:
-                Cm += (mat.preco + mat.transporte) * (c.percentagem/100)
-
-        custo_total = ((Cc + Ce + Ch) / producao_diaria) + ((Cf + Cm + (Ct/n_ciclos)))
-        custo_total = custo_total * mistura.baridade
-        custo_total = custo_total * espessura
-        custo_total = custo_total * (1 + lucro)
-
-        resultado = {
-            'mistura': mistura.nome,
-            'espessura': espessura,
-            'producao': producao_diaria,
-            'ciclos': n_ciclos,
-            'lucro': lucro*100,
-            'valor': round(custo_total,2)
-        }
-
-    return render_template('calculo.html', misturas=misturas, diversos=diversos, resultado=resultado)
-
-# -------------------------
-# INIT DB
-# -------------------------
-def seed_data():
-    if not Diversos.query.first():
-        d = Diversos(custo_central=880.88, custo_fabrico=11.01, custo_camião=48.56, n_ciclos=5)
-        db.session.add(d)
-    if not Mistura.query.first():
-        misturas = ['Desgaste','Binder','Macadame','Argamassa','Desgaste Subjacente']
-        for m in misturas:
-            db.session.add(Mistura(nome=m, baridade=1.0))
+    # Misturas padrão
+    default_mixes = [
+        ('Desgaste', 1.0),
+        ('Binder', 1.0),
+        ('Macadame', 1.0),
+        ('Argamassa', 1.0),
+        ('Desgaste Subjacente', 1.0)
+    ]
+    for name, bar in default_mixes:
+        if not Mistura.query.filter_by(nome=name).first():
+            db.session.add(Mistura(nome=name, baridade=bar))
     db.session.commit()
 
-with app.app_context():
-    db.create_all()
-    seed_data()
+    # Materiais pré-carregados
+    default_materials = [
+        ('Pó de pedra Calcário', 5.0, 2.0),
+        ('Brita 1 Calcário', 6.0, 2.5),
+        ('Brita 2 Calcário', 7.0, 3.0),
+        ('Pó de pedra Granito', 6.5, 2.0),
+        ('Brita 1 Granito', 7.5, 2.5),
+        ('Brita 2 Granito', 8.0, 3.0),
+        ('Filler Comercial', 3.0, 1.0),
+        ('Filler Recuperado', 2.5, 1.0),
+        ('Fresado', 2.0, 1.0),
+        ('Areia', 4.0, 0.5),
+        ('Betume', 100.0, 0.0)
+    ]
+    for nome, preco, transp in default_materials:
+        if not Material.query.filter_by(nome=nome).first():
+            db.session.add(Material(nome=nome, preco=preco, transporte=transp))
+    db.session.commit()
 
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=10000)
+    # Composição exemplo de cada mistura
+    mistura_exemplos = {
+        'Desgaste': [('Brita 1 Calcário',40),('Brita 2 Calcário',40),('Areia',10),('Betume',10)],
+        'Binder': [('Brita 1 Calcário',30),('Brita 2 Calcário',50),('Areia',10),('Betume',10)],
+        'Macadame': [('Brita 2 Granito',60),('Pó de pedra Granito',30),('Betume',10)],
+        'Argamassa': [('Areia',50),('Pó de pedra Calcário',40),('Betume',10)],
+        'Desgaste Subjacente': [('Brita 1 Granito',35),('Brita 2 Granito',35),('Areia',20),('Betume',10)]
+    }
+    for mistura_nome, comps in mistura_exemplos.items():
+        mistura = Mistura.query.filter_by(nome=mistura_nome).first()
+        if mistura:
+            for mat_nome, pct in comps:
+                mat = Material.query.filter_by(nome=mat_nome).first()
+                if mat and not MisturaMaterial.query.filter_by(mistura_id=mistura.id, material_id=mat.id).first():
+                    db.session.add(MisturaMaterial(mistura_id=mistura.id, material_id=mat.id, percentagem=pct))
+    db.session.commit()
