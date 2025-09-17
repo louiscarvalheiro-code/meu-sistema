@@ -7,7 +7,6 @@ from sqlalchemy import func
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'uma-chave-secreta-local')
 
-# DATABASE: use DATABASE_URL (Postgres) in production, else use local SQLite
 db_url = os.getenv('DATABASE_URL')
 if db_url:
     if db_url.startswith('postgres://'):
@@ -19,7 +18,6 @@ else:
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-# ----- MODELS -----
 class Equipamento(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(140), nullable=False)
@@ -56,7 +54,6 @@ class Diverso(db.Model):
     nome = db.Column(db.String(140), nullable=False, unique=True)
     valor = db.Column(db.Float, nullable=False, default=0.0)
 
-# Ensure tables exist and default diversos
 @app.before_request
 def create_tables():
     db.create_all()
@@ -69,9 +66,21 @@ def create_tables():
     for name, val in defaults.items():
         if not Diverso.query.filter_by(nome=name).first():
             db.session.add(Diverso(nome=name, valor=val))
+
+    # default mixes if none
+    default_mixes = [
+        ('Desgaste', 1.0),
+        ('Binder', 1.0),
+        ('Macadame', 1.0),
+        ('Argamassa', 1.0),
+        ('Desgaste Subjacente', 1.0)
+    ]
+    for name, bar in default_mixes:
+        if not Mistura.query.filter_by(nome=name).first():
+            db.session.add(Mistura(nome=name, baridade=bar))
+
     db.session.commit()
 
-# ----- UTILITIES -----
 def total_percentagem_mistura(mistura_id):
     total = db.session.query(func.coalesce(func.sum(MisturaMaterial.percentagem), 0.0)).filter_by(mistura_id=mistura_id).scalar()
     return float(total or 0.0)
@@ -82,13 +91,11 @@ def custo_mistura_por_ton(mistura_id):
     for c in comps:
         mat = c.material
         if mat:
-            # percentagem é em %, dividir por 100
             custo += (c.percentagem / 100.0) * (mat.preco + mat.transporte)
     return round(custo, 6)
 
-# ----- ROUTES: CALCULO -----
 @app.route('/')
-@app.route('/calculo', methods=['GET', 'POST'])
+@app.route('/calculo', methods=['GET','POST'])
 def calculo():
     misturas = Mistura.query.order_by(Mistura.nome).all()
     resultado = None
@@ -102,20 +109,16 @@ def calculo():
             dificuldade = int(request.form.get('dificuldade') or 1)
             lucro = float(request.form.get('lucro') or 0)
 
-            # custos
             cc = Diverso.query.filter_by(nome='Custo Central').first().valor
             cf = Diverso.query.filter_by(nome='Custo Fabrico').first().valor
             ct = Diverso.query.filter_by(nome='Custo Camiao Hora').first().valor
 
-            # Ce and Ch are sums of hourly costs * quantities
             ce_hourly = db.session.query(func.coalesce(func.sum(Equipamento.custo * Equipamento.quantidade), 0)).scalar() or 0.0
             ch_hourly = db.session.query(func.coalesce(func.sum(Humano.custo * Humano.quantidade), 0)).scalar() or 0.0
 
-            # multiply hourly totals by 8 to get daily cost
             ce_daily = ce_hourly * 8.0
             ch_daily = ch_hourly * 8.0
 
-            # Cm computed from composition
             custo_mistura = custo_mistura_por_ton(mistura_id) if mistura_id else 0.0
 
             fixa_por_ton = (cc + ce_daily + ch_daily) / (producao if producao>0 else 1)
@@ -147,8 +150,7 @@ def calculo():
             flash(f'Erro no cálculo: {e}', 'danger')
     return render_template('calculo.html', misturas=misturas, resultado=resultado, detalhe=detalhe)
 
-# ----- ROUTES: EQUIPAMENTOS -----
-@app.route('/equipamentos', methods=['GET', 'POST'])
+@app.route('/equipamentos', methods=['GET','POST'])
 def equipamentos():
     if request.method == 'POST':
         nome = request.form.get('nome')
@@ -170,8 +172,7 @@ def equipamentos_delete(id):
     flash('Equipamento removido.', 'warning')
     return redirect(url_for('equipamentos'))
 
-# ----- ROUTES: HUMANOS -----
-@app.route('/humanos', methods=['GET', 'POST'])
+@app.route('/humanos', methods=['GET','POST'])
 def humanos():
     if request.method == 'POST':
         nome = request.form.get('nome')
@@ -193,8 +194,7 @@ def humanos_delete(id):
     flash('Humano removido.', 'warning')
     return redirect(url_for('humanos'))
 
-# ----- ROUTES: MATERIAIS -----
-@app.route('/materiais', methods=['GET', 'POST'])
+@app.route('/materiais', methods=['GET','POST'])
 def materiais():
     if request.method == 'POST':
         nome = request.form.get('nome')
@@ -216,8 +216,7 @@ def materiais_delete(id):
     flash('Material removido.', 'warning')
     return redirect(url_for('materiais'))
 
-# ----- ROUTES: MISTURAS & COMPOSIÇÃO -----
-@app.route('/misturas', methods=['GET', 'POST'])
+@app.route('/misturas', methods=['GET','POST'])
 def misturas():
     if request.method == 'POST':
         nome = request.form.get('nome')
@@ -238,7 +237,7 @@ def misturas_delete(id):
     flash('Mistura removida.', 'warning')
     return redirect(url_for('misturas'))
 
-@app.route('/misturas/<int:mistura_id>/composicao', methods=['GET', 'POST'])
+@app.route('/misturas/<int:mistura_id>/composicao', methods=['GET','POST'])
 def misturas_composicao(mistura_id):
     mistura = Mistura.query.get_or_404(mistura_id)
     materiais = Material.query.order_by(Material.nome).all()
@@ -288,8 +287,7 @@ def misturas_composicao_delete(mistura_id, comp_id):
     flash('Componente removido.', 'warning')
     return redirect(url_for('misturas_composicao', mistura_id=mistura_id))
 
-# ----- ROUTES: DIVERSOS -----
-@app.route('/diversos', methods=['GET', 'POST'])
+@app.route('/diversos', methods=['GET','POST'])
 def diversos():
     if request.method == 'POST':
         nome = request.form.get('nome')

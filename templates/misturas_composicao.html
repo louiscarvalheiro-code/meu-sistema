@@ -2,57 +2,23 @@
 {% extends 'base.html' %}
 {% block content %}
 <h1>Composição: {{ mistura.nome }}</h1>
-<p>Baridade: {{ mistura.baridade }}</p>
 <div class="row">
   <div class="col-md-6">
-    <h5>Adicionar componente</h5>
     <form method="POST">
-      <div class="mb-2">
-        <label>Material</label>
-        <select name="material_id" class="form-select">
-          <option value="0">-- Selecionar --</option>
-          {% for m in materiais %}
-            <option value="{{ m.id }}">{{ m.nome }} ({{ m.preco }} + {{ m.transporte }})</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="mb-2">
-        <label>Percentagem (%)</label>
-        <input name="percentagem" type="number" step="0.01" class="form-control" required>
-      </div>
-      <button class="btn btn-primary">Adicionar</button>
-      <a class="btn btn-secondary" href="{{ url_for('misturas') }}">Voltar</a>
+      <div class="mb-2"><label>Material</label>
+      <select name="material_id" class="form-select"><option value="0">-- Selecionar --</option>{% for m in materiais %}<option value="{{ m.id }}">{{ m.nome }}</option>{% endfor %}</select></div>
+      <div class="mb-2"><label>Percentagem (%)</label><input name="percentagem" type="number" step="0.01" class="form-control" required></div>
+      <button class="btn btn-primary">Adicionar</button> <a class="btn btn-secondary" href="{{ url_for('misturas') }}">Voltar</a>
     </form>
   </div>
   <div class="col-md-6">
-    <h5>Componentes actuais</h5>
-    <table class="table">
-      <thead><tr><th>Material</th><th>%</th><th>Custo unit.</th><th>Ações</th></tr></thead>
-      <tbody>
-        {% for c in componentes %}
-          <tr>
-            <td>{{ c.material.nome }}</td>
-            <td>
-              <form method="POST" action="{{ url_for('misturas_composicao_edit', mistura_id=mistura.id, comp_id=c.id) }}" class="d-inline-flex">
-                <input name="percentagem" type="number" step="0.01" value="{{ c.percentagem }}" class="form-control form-control-sm" style="width:100px;">
-                <button class="btn btn-sm btn-primary ms-2">OK</button>
-              </form>
-            </td>
-            <td>{{ (c.material.preco + c.material.transporte) | round(3) }} €/t</td>
-            <td>
-              <form method="POST" action="{{ url_for('misturas_composicao_delete', mistura_id=mistura.id, comp_id=c.id) }}" style="display:inline">
-                <button class="btn btn-sm btn-danger">Remover</button>
-              </form>
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    <h5>Componentes</h5>
+    <table class="table"><thead><tr><th>Material</th><th>%</th><th>Custos</th><th>Ações</th></tr></thead><tbody>
+    {% for c in componentes %}<tr><td>{{ c.material.nome }}</td><td>{{ c.percentagem }}</td><td>{{ (c.material.preco + c.material.transporte) | round(3) }} €/t</td>
+    <td><form method="POST" action="{{ url_for('misturas_composicao_delete', mistura_id=mistura.id, comp_id=c.id) }}"><button class="btn btn-sm btn-danger">Remover</button></form></td></tr>{% endfor %}
+    </tbody></table>
     <p><strong>Total %:</strong> {{ total_pct }}%</p>
-    {% if total_pct != 100 %}
-      <div class="alert alert-warning">A soma das percentagens não é 100% — faltam {{ (100 - total_pct) | round(3) }}%.</div>
-    {% endif %}
-    <p><strong>Custo da Mistura (€/t):</strong> {{ custo_mist }} €/t</p>
+    <p><strong>Custo mistura (€/t):</strong> {{ custo_mist }}</p>
   </div>
 </div>
 {% endblock %}
