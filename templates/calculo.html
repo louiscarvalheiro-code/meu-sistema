@@ -1,38 +1,5 @@
-
 {% extends 'base.html' %}
 {% block content %}
-<h1>Cálculo</h1>
-{% if misturas|length == 0 %}
-  <div class="alert alert-warning">Ainda não existem misturas. Por favor crie uma na aba Misturas.</div>
-{% else %}
-<form method="POST" class="row g-3">
-  <div class="col-md-4">
-    <label>Mistura</label>
-    <select name="mistura_id" class="form-select" required>
-      {% for m in misturas %}
-        <option value="{{ m.id }}">{{ m.nome }}</option>
-      {% endfor %}
-    </select>
-  </div>
-  <div class="col-md-2"><label>Espessura (m)</label><input name="espessura" type="number" step="0.01" class="form-control" required></div>
-  <div class="col-md-2"><label>Produção diária (ton)</label><input name="producao" type="number" step="1" class="form-control" required></div>
-  <div class="col-md-2"><label>Nº Ciclos</label><input name="nc" type="number" class="form-control" required value="5"></div>
-  <div class="col-md-1"><label>Dificuldade</label><input name="dificuldade" type="number" min="1" max="5" class="form-control" required></div>
-  <div class="col-md-1"><label>Lucro %</label><input name="lucro" type="number" step="0.1" class="form-control" required></div>
-  <div class="col-12 text-end"><button class="btn btn-primary">Calcular</button></div>
-</form>
-{% endif %}
-{% if resultado is not none %}
-  <div class="card mt-4"><div class="card-body">
-    <h5>Resultado: {{ resultado }} €</h5>
-    <p>Espessura: {{ detalhe.espessura }} m | Produção diária: {{ detalhe.producao }} t | Nº Ciclos: {{ detalhe.nc }} | Lucro: {{ detalhe.lucro }}%</p>
-    <ul>
-      <li>Ce hourly: {{ detalhe.ce_hourly }} €/h</li>
-      <li>Ch hourly: {{ detalhe.ch_hourly }} €/h</li>
-      <li>Ce daily (8h): {{ detalhe.ce_daily }} €</li>
-      <li>Ch daily (8h): {{ detalhe.ch_daily }} €</li>
-      <li>Custo mistura (€/t): {{ detalhe.custo_mistura }} €</li>
-    </ul>
-  </div></div>
-{% endif %}
+<h2>Cálculo</h2>
+<p>Aqui será feito o cálculo.</p>
 {% endblock %}
