@@ -1,25 +1,28 @@
-
-{% extends 'base.html' %}
+{% extends "base.html" %}
 {% block content %}
-<h1>Misturas</h1>
-<form method="POST" class="row g-3 mb-3">
-  <div class="col-md-6"><input name="nome" class="form-control" placeholder="Nome da mistura (e.g. Desgaste)" required></div>
-  <div class="col-md-3"><input name="baridade" class="form-control" placeholder="Baridade (e.g. 2.4)" required></div>
-  <div class="col-md-3"><button class="btn btn-success">Adicionar</button></div>
-</form>
+<h2>Misturas</h2>
+
+<a href="{{ url_for('adicionar_mistura') }}" class="btn btn-success mb-3">+ Nova Mistura</a>
+
 <table class="table table-striped">
-  <thead><tr><th>Mistura</th><th>Baridade</th><th>Ações</th></tr></thead>
+  <thead>
+    <tr>
+      <th>Nome</th>
+      <th>Baridade</th>
+      <th>Ações</th>
+    </tr>
+  </thead>
   <tbody>
-    {% for it in lista %}
-      <tr>
-        <td>{{ it.nome }}</td><td>{{ it.baridade }}</td>
-        <td>
-          <a class="btn btn-sm btn-secondary" href="{{ url_for('misturas_composicao', mistura_id=it.id) }}">Composição</a>
-          <form method="POST" action="{{ url_for('misturas_delete', id=it.id) }}" style="display:inline">
-            <button class="btn btn-sm btn-danger">Remover</button>
-          </form>
-        </td>
-      </tr>
+    {% for m in misturas %}
+    <tr>
+      <td>{{ m.nome }}</td>
+      <td>{{ m.baridade }}</td>
+      <td>
+        <a href="{{ url_for('editar_mistura', id=m.id) }}" class="btn btn-primary btn-sm">Editar</a>
+        <a href="{{ url_for('composicao_mistura', id=m.id) }}" class="btn btn-warning btn-sm">Composição</a>
+        <a href="{{ url_for('apagar_mistura', id=m.id) }}" class="btn btn-danger btn-sm">Apagar</a>
+      </td>
+    </tr>
     {% endfor %}
   </tbody>
 </table>

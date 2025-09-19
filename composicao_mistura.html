@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Composição da Mistura: {{ mistura.nome }}</h2>
+<p>Baridade: {{ mistura.baridade }}</p>
+
+<form method="POST">
+  <table class="table table-bordered">
+    <thead>
+      <tr>
+        <th>Material</th>
+        <th>Percentagem (%)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% set total = 0 %}
+      {% for m in materiais %}
+      {% set perc = composicao.get(m.id, 0) %}
+      {% set total = total + perc %}
+      <tr>
+        <td>{{ m.nome }}</td>
+        <td>
+          <input type="number" step="0.01" min="0" max="100"
+                 name="material_{{ m.id }}" value="{{ perc }}" class="form-control">
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <p><strong>Total: {{ total }} %</strong>
+     {% if total != 100 %}
+       <span class="text-danger">(Deve ser 100%)</span>
+     {% else %}
+       <span class="text-success">(Correto)</span>
+     {% endif %}
+  </p>
+
+  <button type="submit" class="btn btn-primary">Guardar Composição</button>
+  <a href="{{ url_for('misturas') }}" class="btn btn-secondary">Voltar</a>
+</form>
+{% endblock %}
