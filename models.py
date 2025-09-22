@@ -1,50 +1,44 @@
-from flask_sqlalchemy import SQLAlchemy
 
+from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()
 
-# -------------------------------------------------
-# 🔧 Modelo Material
-# -------------------------------------------------
 class Material(db.Model):
-    __tablename__ = "materiais"
-
+    __tablename__ = 'material'
     id = db.Column(db.Integer, primary_key=True)
-    nome = db.Column(db.String(100), nullable=False)
-    preco_material = db.Column(db.Float, default=0.0)   # €/ton
-    preco_transporte = db.Column(db.Float, default=0.0) # €/ton
+    nome = db.Column(db.String(200), nullable=False, unique=True)
+    preco = db.Column(db.Float, nullable=False, default=0.0)
+    transporte = db.Column(db.Float, nullable=False, default=0.0)
 
-    def __repr__(self):
-        return f"<Material {self.nome}>"
-
-
-# -------------------------------------------------
-# 🔧 Modelo Mistura
-# -------------------------------------------------
 class Mistura(db.Model):
-    __tablename__ = "misturas"
-
+    __tablename__ = 'mistura'
     id = db.Column(db.Integer, primary_key=True)
-    nome = db.Column(db.String(100), nullable=False)
-    baridade = db.Column(db.Float, nullable=False)
+    nome = db.Column(db.String(140), nullable=False, unique=True)
+    baridade = db.Column(db.Float, nullable=False, default=1.0)
 
-    composicoes = db.relationship("Composicao", backref="mistura", cascade="all, delete-orphan")
-
-    def __repr__(self):
-        return f"<Mistura {self.nome}>"
-
-
-# -------------------------------------------------
-# 🔧 Modelo Composição
-# -------------------------------------------------
 class Composicao(db.Model):
-    __tablename__ = "composicoes"
-
+    __tablename__ = 'composicao'
     id = db.Column(db.Integer, primary_key=True)
-    mistura_id = db.Column(db.Integer, db.ForeignKey("misturas.id"), nullable=False)
-    material_id = db.Column(db.Integer, db.ForeignKey("materiais.id"), nullable=False)
-    percentagem = db.Column(db.Float, nullable=False)  # %
+    mistura_id = db.Column(db.Integer, db.ForeignKey('mistura.id'), nullable=False)
+    material_id = db.Column(db.Integer, db.ForeignKey('material.id'), nullable=False)
+    percentagem = db.Column(db.Float, nullable=False, default=0.0)
+    material = db.relationship('Material')
 
-    material = db.relationship("Material")
+class Equipamento(db.Model):
+    __tablename__ = 'equipamento'
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(140), nullable=False)
+    custo = db.Column(db.Float, nullable=False, default=0.0)
+    quantidade = db.Column(db.Integer, nullable=False, default=1)
 
-    def __repr__(self):
-        return f"<Composicao Mistura={self.mistura_id} Material={self.material_id} {self.percentagem}%>"
+class Humano(db.Model):
+    __tablename__ = 'humano'
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(140), nullable=False)
+    custo = db.Column(db.Float, nullable=False, default=0.0)
+    quantidade = db.Column(db.Integer, nullable=False, default=1)
+
+class Diverso(db.Model):
+    __tablename__ = 'diverso'
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(140), nullable=False, unique=True)
+    valor = db.Column(db.Float, nullable=False, default=0.0)
