@@ -1,104 +1,100 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
-from models import db, Mistura, Material, Composicao
+from flask_sqlalchemy import SQLAlchemy
+import os
 
 app = Flask(__name__)
-app.secret_key = "supersecretkey"
+app.secret_key = "secret-key"
 
-# Configuração da base de dados (Render/PostgreSQL ou local)
-app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://user:password@host:5432/database"
+# Configuração da base de dados para Render (PostgreSQL) ou SQLite local
+db_url = os.getenv("DATABASE_URL", "sqlite:///app.db")
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+app.config["SQLALCHEMY_DATABASE_URI"] = db_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-db.init_app(app)
+db = SQLAlchemy(app)
 
-# 🔑 Garantir criação automática das tabelas no arranque
+# MODELOS
+class Material(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(100), nullable=False)
+    preco = db.Column(db.Float, nullable=False)
+    transporte = db.Column(db.Float, nullable=True, default=0.0)
+
+class Mistura(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(100), nullable=False)
+    baridade = db.Column(db.Float, nullable=False)
+
+class Composicao(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    mistura_id = db.Column(db.Integer, db.ForeignKey("mistura.id"))
+    material_id = db.Column(db.Integer, db.ForeignKey("material.id"))
+    percentagem = db.Column(db.Float, nullable=False)
+    mistura = db.relationship("Mistura", backref=db.backref("composicoes", lazy=True))
+    material = db.relationship("Material")
+
+class Equipamento(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(100), nullable=False)
+    preco_hora = db.Column(db.Float, nullable=False)
+    quantidade = db.Column(db.Integer, default=1)
+
+class Humano(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(100), nullable=False)
+    preco_hora = db.Column(db.Float, nullable=False)
+    quantidade = db.Column(db.Integer, default=1)
+
+class Diversos(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    custo_central = db.Column(db.Float, default=880.88)
+    custo_fabrico = db.Column(db.Float, default=11.0)
+    camiao_hora = db.Column(db.Float, default=48.56)
+    nciclos = db.Column(db.Integer, default=5)
+
+# Criar tabelas automaticamente
 with app.app_context():
     db.create_all()
+    if Diversos.query.first() is None:
+        db.session.add(Diversos())
+        db.session.commit()
 
-# ---------------- ROTAS ---------------- #
-
+# ROTAS
 @app.route("/")
 def index():
     return redirect(url_for("calculo"))
 
-# ---------- EQUIPAMENTOS ----------
-@app.route("/equipamentos")
-def equipamentos():
-    return render_template("equipamentos.html")
-
-# ---------- HUMANOS ----------
-@app.route("/humanos")
-def humanos():
-    return render_template("humanos.html")
-
-# ---------- MATERIAIS ----------
 @app.route("/materiais")
 def materiais():
     materiais = Material.query.all()
     return render_template("materiais.html", materiais=materiais)
 
-@app.route("/materiais/add", methods=["POST"])
-def add_material():
-    nome = request.form.get("nome")
-    custo = request.form.get("custo")
-    if nome and custo:
-        novo = Material(nome=nome, custo=float(custo))
-        db.session.add(novo)
-        db.session.commit()
-        flash("✅ Material adicionado com sucesso", "success")
-    else:
-        flash("⚠️ Preencha todos os campos", "danger")
-    return redirect(url_for("materiais"))
-
-# ---------- MISTURAS ----------
 @app.route("/misturas")
 def misturas():
     misturas = Mistura.query.all()
     return render_template("misturas.html", misturas=misturas)
 
-@app.route("/misturas/<int:id>")
-def ver_mistura(id):
-    mistura = Mistura.query.get_or_404(id)
-    return render_template("ver_mistura.html", mistura=mistura)
+@app.route("/equipamentos")
+def equipamentos():
+    equipamentos = Equipamento.query.all()
+    return render_template("equipamentos.html", equipamentos=equipamentos)
 
-@app.route("/misturas/add", methods=["POST"])
-def add_mistura():
-    nome = request.form.get("nome")
-    if nome:
-        nova = Mistura(nome=nome)
-        db.session.add(nova)
-        db.session.commit()
-        flash("✅ Mistura criada com sucesso", "success")
-    else:
-        flash("⚠️ Informe o nome da mistura", "danger")
-    return redirect(url_for("misturas"))
+@app.route("/humanos")
+def humanos():
+    humanos = Humano.query.all()
+    return render_template("humanos.html", humanos=humanos)
 
-@app.route("/misturas/<int:id>/add_material", methods=["POST"])
-def add_material_mistura(id):
-    mistura = Mistura.query.get_or_404(id)
-    material_id = request.form.get("material_id")
-    percentagem = request.form.get("percentagem")
-
-    if material_id and percentagem:
-        comp = Composicao(mistura_id=id, material_id=material_id, percentagem=float(percentagem))
-        db.session.add(comp)
-        db.session.commit()
-        flash("✅ Material adicionado à mistura", "success")
-    else:
-        flash("⚠️ Preencha todos os campos", "danger")
-
-    return redirect(url_for("ver_mistura", id=id))
-
-# ---------- DIVERSOS ----------
 @app.route("/diversos")
 def diversos():
-    return render_template("diversos.html")
+    diversos = Diversos.query.first()
+    return render_template("diversos.html", diversos=diversos)
 
-# ---------- CALCULO ----------
 @app.route("/calculo")
 def calculo():
     misturas = Mistura.query.all()
     return render_template("calculo.html", misturas=misturas)
 
-# ---------- RUN ----------
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
