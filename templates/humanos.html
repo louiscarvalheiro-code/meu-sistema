@@ -1,71 +1,29 @@
+
 {% extends 'base.html' %}
 {% block content %}
 <h1>Meios Humanos</h1>
-
-<!-- Formulário de adicionar -->
 <form method="POST" class="row g-3 mb-3">
-  <div class="col-md-5">
-    <input name="nome" class="form-control" placeholder="Função (e.g. Operador)" required>
-  </div>
-  <div class="col-md-3">
-    <input name="custo" type="number" step="0.01" min="0" class="form-control" placeholder="Custo (€)" required>
-  </div>
-  <div class="col-md-2">
-    <input name="quantidade" type="number" min="1" class="form-control" placeholder="Quantidade" required value="1">
-  </div>
-  <div class="col-md-2">
-    <button class="btn btn-success">Adicionar</button>
-  </div>
+  <div class="col-md-5"><input name="nome" class="form-control" placeholder="Função (e.g. Operador)" required></div>
+  <div class="col-md-3"><input name="custo" class="form-control" placeholder="Custo (€)" required></div>
+  <div class="col-md-2"><input name="quantidade" class="form-control" placeholder="Quantidade" required value="1"></div>
+  <div class="col-md-2"><button class="btn btn-success">Adicionar</button></div>
 </form>
-
-<!-- Tabela -->
 <table class="table table-striped">
-  <thead>
-    <tr>
-      <th>Nome</th>
-      <th>Custo unit.</th>
-      <th>Quantidade</th>
-      <th>Custo total</th>
-      <th>Ações</th>
-    </tr>
-  </thead>
+  <thead><tr><th>Nome</th><th>Custo unit.</th><th>Quantidade</th><th>Custo total</th><th>Ações</th></tr></thead>
   <tbody>
     {% for it in lista %}
       <tr>
-        <form method="POST" action="{{ url_for('humanos_update', id=it.id) }}">
-          <td>
-            <input name="nome" class="form-control form-control-sm" value="{{ it.nome }}">
-          </td>
-          <td>
-            <input name="custo" type="number" step="0.01" min="0" class="form-control form-control-sm" value="{{ it.custo }}">
-          </td>
-          <td>
-            <input name="quantidade" type="number" min="1" class="form-control form-control-sm" value="{{ it.quantidade }}">
-          </td>
-          <td>{{ (it.custo * it.quantidade) | round(2) }} €</td>
-          <td>
-            <button class="btn btn-sm btn-primary">Guardar</button>
-            <button formaction="{{ url_for('humanos_delete', id=it.id) }}" 
-                    formmethod="POST" 
-                    class="btn btn-sm btn-danger"
-                    onclick="return confirm('Tem a certeza que deseja remover?')">
-              Remover
-            </button>
-          </td>
-        </form>
+        <td>{{ it.nome }}</td>
+        <td>{{ it.custo }}</td>
+        <td>{{ it.quantidade }}</td>
+        <td>{{ (it.custo * it.quantidade) | round(2) }}</td>
+        <td>
+          <form method="POST" action="{{ url_for('humanos_delete', id=it.id) }}" style="display:inline">
+            <button class="btn btn-sm btn-danger">Remover</button>
+          </form>
+        </td>
       </tr>
     {% endfor %}
   </tbody>
-  {% if lista %}
-    <tfoot>
-      <tr>
-        <th colspan="3">Total</th>
-        <th>
-          {{ lista | sum(attribute='custo', start=0) }}
-        </th>
-        <th></th>
-      </tr>
-    </tfoot>
-  {% endif %}
 </table>
 {% endblock %}
