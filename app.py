@@ -1,3 +1,4 @@
+
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 import os
@@ -6,14 +7,19 @@ from sqlalchemy import func
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'uma-chave-secreta-local')
 
+# DATABASE: use DATABASE_URL (Postgres) in production, else use local SQLite
 db_url = os.getenv('DATABASE_URL')
-if db_url and db_url.startswith('postgres://'):
-    db_url = db_url.replace('postgres://', 'postgresql://', 1)
-app.config['SQLALCHEMY_DATABASE_URI'] = db_url or 'sqlite:///database.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+if db_url:
+    if db_url.startswith('postgres://'):
+        db_url = db_url.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
+# ----- MODELS -----
 class Equipamento(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(140), nullable=False)
@@ -50,9 +56,11 @@ class Diverso(db.Model):
     nome = db.Column(db.String(140), nullable=False, unique=True)
     valor = db.Column(db.Float, nullable=False, default=0.0)
 
+# Ensure tables exist (simple approach)
 @app.before_request
 def create_tables():
     db.create_all()
+    # ensure default Diversos exist
     defaults = {
         'Custo Central': 1500.0,
         'Custo Fabrico': 11.0,
@@ -64,9 +72,10 @@ def create_tables():
             db.session.add(Diverso(nome=name, valor=val))
     db.session.commit()
 
+# (routes omitted in the displayed file for brevity; use full file when deploying)
 @app.route('/')
-def home():
-    return "App Base Funcional"
+def index():
+    return redirect(url_for('calculo'))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.getenv('PORT', 10000)), debug=True)
