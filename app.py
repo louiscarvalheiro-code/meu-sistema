@@ -44,7 +44,8 @@ class Mistura(db.Model):
 
 class MisturaMaterial(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    mistura_id = db.Column(db.Integer, db.ForeignKey('mistura.id'), nullable=False)
+    # CORREÇÃO: Adicionar ondelete='CASCADE'
+    mistura_id = db.Column(db.Integer, db.ForeignKey('mistura.id', ondelete='CASCADE'), nullable=False)
     material_id = db.Column(db.Integer, db.ForeignKey('material.id'), nullable=False)
     percentagem = db.Column(db.Float, nullable=False, default=0.0)
     mistura = db.relationship('Mistura', backref=db.backref('componentes', cascade='all, delete-orphan'))
