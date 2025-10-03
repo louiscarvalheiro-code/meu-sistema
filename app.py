@@ -155,6 +155,25 @@ def equipamentos():
     lista = Equipamento.query.order_by(Equipamento.nome).all()
     return render_template('equipamentos.html', lista=lista)
 
+@app.route('/equipamentos/edit/<int:id>', methods=['GET', 'POST'])
+def equipamentos_edit(id):
+    item = Equipamento.query.get_or_404(id)
+    if request.method == 'POST':
+        # 1. Atualizar os campos com os dados do formulário
+        item.nome = request.form.get('nome')
+        item.custo = float(request.form.get('custo') or 0)
+        item.quantidade = int(request.form.get('quantidade') or 1)
+        
+        # 2. Guardar as alterações na base de dados
+        db.session.commit()
+        flash('Equipamento atualizado com sucesso.', 'success')
+        
+        # 3. Redirecionar de volta para a lista
+        return redirect(url_for('equipamentos'))
+    
+    # Mostrar o formulário pré-preenchido (GET)
+    return render_template('equipamentos_edit.html', item=item)
+
 @app.route('/equipamentos/delete/<int:id>', methods=['POST'])
 def equipamentos_delete(id):
     item = Equipamento.query.get_or_404(id)
