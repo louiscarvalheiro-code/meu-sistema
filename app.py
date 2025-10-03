@@ -140,7 +140,7 @@ def calculo():
             flash(f'Erro no cálculo: {e}', 'danger')
     return render_template('calculo.html', misturas=misturas, resultado=resultado, detalhe=detalhe)
 
-# ----- ROUTES: EQUIPAMENTOS -----
+# ----- ROUTES: EQUIPAMENTOS (EDIÇÃO JÁ IMPLEMENTADA) -----
 @app.route('/equipamentos', methods=['GET', 'POST'])
 def equipamentos():
     if request.method == 'POST':
@@ -159,19 +159,12 @@ def equipamentos():
 def equipamentos_edit(id):
     item = Equipamento.query.get_or_404(id)
     if request.method == 'POST':
-        # 1. Atualizar os campos com os dados do formulário
         item.nome = request.form.get('nome')
         item.custo = float(request.form.get('custo') or 0)
         item.quantidade = int(request.form.get('quantidade') or 1)
-        
-        # 2. Guardar as alterações na base de dados
         db.session.commit()
         flash('Equipamento atualizado com sucesso.', 'success')
-        
-        # 3. Redirecionar de volta para a lista
         return redirect(url_for('equipamentos'))
-    
-    # Mostrar o formulário pré-preenchido (GET)
     return render_template('equipamentos_edit.html', item=item)
 
 @app.route('/equipamentos/delete/<int:id>', methods=['POST'])
@@ -182,7 +175,7 @@ def equipamentos_delete(id):
     flash('Equipamento removido.', 'warning')
     return redirect(url_for('equipamentos'))
 
-# ----- ROUTES: HUMANOS -----
+# ----- ROUTES: HUMANOS (NOVAS ROTAS DE EDIÇÃO) -----
 @app.route('/humanos', methods=['GET', 'POST'])
 def humanos():
     if request.method == 'POST':
@@ -197,6 +190,18 @@ def humanos():
     lista = Humano.query.order_by(Humano.nome).all()
     return render_template('humanos.html', lista=lista)
 
+@app.route('/humanos/edit/<int:id>', methods=['GET', 'POST'])
+def humanos_edit(id):
+    item = Humano.query.get_or_404(id)
+    if request.method == 'POST':
+        item.nome = request.form.get('nome')
+        item.custo = float(request.form.get('custo') or 0)
+        item.quantidade = int(request.form.get('quantidade') or 1)
+        db.session.commit()
+        flash('Meio Humano atualizado com sucesso.', 'success')
+        return redirect(url_for('humanos'))
+    return render_template('humanos_edit.html', item=item)
+
 @app.route('/humanos/delete/<int:id>', methods=['POST'])
 def humanos_delete(id):
     item = Humano.query.get_or_404(id)
@@ -205,7 +210,7 @@ def humanos_delete(id):
     flash('Humano removido.', 'warning')
     return redirect(url_for('humanos'))
 
-# ----- ROUTES: MATERIAIS -----
+# ----- ROUTES: MATERIAIS (NOVAS ROTAS DE EDIÇÃO) -----
 @app.route('/materiais', methods=['GET', 'POST'])
 def materiais():
     if request.method == 'POST':
@@ -219,6 +224,18 @@ def materiais():
         return redirect(url_for('materiais'))
     lista = Material.query.order_by(Material.nome).all()
     return render_template('materiais.html', lista=lista)
+
+@app.route('/materiais/edit/<int:id>', methods=['GET', 'POST'])
+def materiais_edit(id):
+    item = Material.query.get_or_404(id)
+    if request.method == 'POST':
+        item.nome = request.form.get('nome')
+        item.preco = float(request.form.get('preco') or 0)
+        item.transporte = float(request.form.get('transporte') or 0)
+        db.session.commit()
+        flash('Material atualizado com sucesso.', 'success')
+        return redirect(url_for('materiais'))
+    return render_template('materiais_edit.html', item=item)
 
 @app.route('/materiais/delete/<int:id>', methods=['POST'])
 def materiais_delete(id):
