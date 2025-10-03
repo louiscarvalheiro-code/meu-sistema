@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Editar Material: {{ item.nome }}</h2>
+<hr>
+
+<form method="POST">
+    <div class="mb-3">
+        <label for="nome" class="form-label">Nome do Material:</label>
+        <input type="text" class="form-control" id="nome" name="nome" value="{{ item.nome }}" required>
+    </div>
+    
+    <div class="mb-3">
+        <label for="preco" class="form-label">Preço (€/ton):</label>
+        <input type="number" step="0.01" class="form-control" id="preco" name="preco" value="{{ item.preco }}" required>
+    </div>
+    
+    <div class="mb-3">
+        <label for="transporte" class="form-label">Custo de Transporte (€/ton):</label>
+        <input type="number" step="0.01" class="form-control" id="transporte" name="transporte" value="{{ item.transporte }}" required>
+    </div>
+    
+    <button type="submit" class="btn btn-primary">Guardar Alterações</button>
+    <a href="{{ url_for('materiais') }}" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endblock %}

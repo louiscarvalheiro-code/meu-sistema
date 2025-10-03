@@ -1,25 +1,65 @@
+{% extends "base.html" %}
 
-{% extends 'base.html' %}
 {% block content %}
-<h1>Materiais</h1>
-<form method="POST" class="row g-3 mb-3">
-  <div class="col-md-5"><input name="nome" class="form-control" placeholder="Material (e.g. Brita 1 Calcário)" required></div>
-  <div class="col-md-3"><input name="preco" class="form-control" placeholder="Preço (€/ton)" required></div>
-  <div class="col-md-3"><input name="transporte" class="form-control" placeholder="Transporte (€/ton)" required></div>
-  <div class="col-md-1"><button class="btn btn-success">Adicionar</button></div>
-</form>
+<h2>Gestão de Materiais</h2>
+<hr>
+
+{# Form for adding new Material #}
+<div class="card mb-4">
+    <div class="card-header">Adicionar Novo Material</div>
+    <div class="card-body">
+        <form method="POST">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="nome" class="form-label">Material (e.g. Brita 1 Calcário)</label>
+                    <input type="text" class="form-control" id="nome" name="nome" required>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label for="preco" class="form-label">Preço (€/ton)</label>
+                    <input type="number" step="0.01" class="form-control" id="preco" name="preco" value="0.0" required>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label for="transporte" class="form-label">Transporte (€/ton)</label>
+                    <input type="number" step="0.01" class="form-control" id="transporte" name="transporte" value="0.0" required>
+                </div>
+                <div class="col-md-2 mb-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Adicionar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# List of existing Material #}
+<h3>Lista de Materiais ({{ lista|length }} itens)</h3>
 <table class="table table-striped">
-  <thead><tr><th>Nome</th><th>Preço</th><th>Transporte</th><th>Ações</th></tr></thead>
-  <tbody>
-    {% for it in lista %}
-      <tr><td>{{ it.nome }}</td><td>{{ it.preco }}</td><td>{{ it.transporte }}</td>
-        <td>
-          <form method="POST" action="{{ url_for('materiais_delete', id=it.id) }}" style="display:inline">
-            <button class="btn btn-sm btn-danger">Remover</button>
-          </form>
-        </td>
-      </tr>
-    {% endfor %}
-  </tbody>
+    <thead>
+        <tr>
+            <th>Nome</th>
+            <th>Preço (€/ton)</th>
+            <th>Transporte (€/ton)</th>
+            <th>Custo Total (€/ton)</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in lista %}
+        <tr>
+            <td>{{ item.nome }}</td>
+            <td>{{ "%.2f"|format(item.preco) }}</td>
+            <td>{{ "%.2f"|format(item.transporte) }}</td>
+            <td>{{ "%.2f"|format(item.preco + item.transporte) }}</td>
+            <td>
+                {# NOVO BOTÃO DE EDIÇÃO #}
+                <a href="{{ url_for('materiais_edit', id=item.id) }}" class="btn btn-sm btn-info me-2">Editar</a>
+                
+                <form method="POST" action="{{ url_for('materiais_delete', id=item.id) }}" style="display:inline;">
+                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Tem certeza que deseja remover este material?');">Remover</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
 </table>
+
 {% endblock %}

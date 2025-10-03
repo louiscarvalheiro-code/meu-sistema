@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Editar Meio Humano: {{ item.nome }}</h2>
+<hr>
+
+<form method="POST">
+    <div class="mb-3">
+        <label for="nome" class="form-label">Função:</label>
+        <input type="text" class="form-control" id="nome" name="nome" value="{{ item.nome }}" required>
+    </div>
+    
+    <div class="mb-3">
+        <label for="custo" class="form-label">Custo (por 8h, Diário ou outro):</label>
+        <input type="number" step="0.01" class="form-control" id="custo" name="custo" value="{{ item.custo }}" required>
+    </div>
+    
+    <div class="mb-3">
+        <label for="quantidade" class="form-label">Quantidade:</label>
+        <input type="number" class="form-control" id="quantidade" name="quantidade" value="{{ item.quantidade }}" required>
+    </div>
+    
+    <button type="submit" class="btn btn-primary">Guardar Alterações</button>
+    <a href="{{ url_for('humanos') }}" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endblock %}
