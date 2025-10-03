@@ -44,7 +44,7 @@ class Mistura(db.Model):
 
 class MisturaMaterial(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    # CORREÇÃO: Adicionar ondelete='CASCADE'
+    # CORREÇÃO CRÍTICA AQUI: ON DELETE CASCADE
     mistura_id = db.Column(db.Integer, db.ForeignKey('mistura.id', ondelete='CASCADE'), nullable=False)
     material_id = db.Column(db.Integer, db.ForeignKey('material.id'), nullable=False)
     percentagem = db.Column(db.Float, nullable=False, default=0.0)
@@ -141,7 +141,7 @@ def calculo():
             flash(f'Erro no cálculo: {e}', 'danger')
     return render_template('calculo.html', misturas=misturas, resultado=resultado, detalhe=detalhe)
 
-# ----- ROUTES: EQUIPAMENTOS (EDIÇÃO JÁ IMPLEMENTADA) -----
+# ----- ROUTES: EQUIPAMENTOS -----
 @app.route('/equipamentos', methods=['GET', 'POST'])
 def equipamentos():
     if request.method == 'POST':
@@ -176,7 +176,7 @@ def equipamentos_delete(id):
     flash('Equipamento removido.', 'warning')
     return redirect(url_for('equipamentos'))
 
-# ----- ROUTES: HUMANOS (NOVAS ROTAS DE EDIÇÃO) -----
+# ----- ROUTES: HUMANOS -----
 @app.route('/humanos', methods=['GET', 'POST'])
 def humanos():
     if request.method == 'POST':
@@ -211,7 +211,7 @@ def humanos_delete(id):
     flash('Humano removido.', 'warning')
     return redirect(url_for('humanos'))
 
-# ----- ROUTES: MATERIAIS (NOVAS ROTAS DE EDIÇÃO) -----
+# ----- ROUTES: MATERIAIS -----
 @app.route('/materiais', methods=['GET', 'POST'])
 def materiais():
     if request.method == 'POST':
