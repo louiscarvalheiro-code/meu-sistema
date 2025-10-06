@@ -44,7 +44,7 @@ class Mistura(db.Model):
 
 class MisturaMaterial(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    # CORREÇÃO CRÍTICA AQUI: ON DELETE CASCADE
+    # Correção para remoção em cascata
     mistura_id = db.Column(db.Integer, db.ForeignKey('mistura.id', ondelete='CASCADE'), nullable=False)
     material_id = db.Column(db.Integer, db.ForeignKey('material.id'), nullable=False)
     percentagem = db.Column(db.Float, nullable=False, default=0.0)
@@ -102,11 +102,17 @@ def calculo():
             dificuldade = int(request.form.get('dificuldade') or 1)
             lucro = float(request.form.get('lucro') or 0)
 
-            # custos base
-            cc = Diverso.query.filter_by(nome='Custo Central').first().valor
-            cf = Diverso.query.filter_by(nome='Custo Fabrico').first().valor
-            ct = Diverso.query.filter_by(nome='Custo Camiao Hora').first().valor
+            # --- CORREÇÃO AQUI: Torna a leitura dos Diversos robusta ao Cold Start ---
+            cc_item = Diverso.query.filter_by(nome='Custo Central').first()
+            cf_item = Diverso.query.filter_by(nome='Custo Fabrico').first()
+            ct_item = Diverso.query.filter_by(nome='Custo Camiao Hora').first()
 
+            # Usar o valor do item ou 0.0 se for None (o que impede o crash)
+            cc = cc_item.valor if cc_item else 0.0
+            cf = cf_item.valor if cf_item else 0.0
+            ct = ct_item.valor if ct_item else 0.0
+            # --------------------------------------------------------------------------
+            
             # equipamentos e humanos multiplicados por 8
             soma_equip = (db.session.query(func.coalesce(func.sum(Equipamento.custo * Equipamento.quantidade), 0)).scalar() or 0.0) * 8
             soma_humanos = (db.session.query(func.coalesce(func.sum(Humano.custo * Humano.quantidade), 0)).scalar() or 0.0) * 8
@@ -138,10 +144,16 @@ def calculo():
                 'soma_humanos': round(soma_humanos, 4)
             }
         except Exception as e:
+            # Em caso de erro grave (como se a mistura ou outros dados essenciais faltarem)
             flash(f'Erro no cálculo: {e}', 'danger')
+            print(f'ERRO CRÍTICO NO CÁLCULO: {e}')
     return render_template('calculo.html', misturas=misturas, resultado=resultado, detalhe=detalhe)
 
-# ----- ROUTES: EQUIPAMENTOS -----
+# ----- ROTAS DE GESTÃO (RESTANTE CÓDIGO) -----
+# (As rotas Equipamentos, Humanos, Materiais, Misturas e Diversos permanecem inalteradas abaixo)
+# ...
+
+# ----- ROUTES: EQUIPAMENTOS (EDIÇÃO JÁ IMPLEMENTADA) -----
 @app.route('/equipamentos', methods=['GET', 'POST'])
 def equipamentos():
     if request.method == 'POST':
@@ -176,7 +188,7 @@ def equipamentos_delete(id):
     flash('Equipamento removido.', 'warning')
     return redirect(url_for('equipamentos'))
 
-# ----- ROUTES: HUMANOS -----
+# ----- ROUTES: HUMANOS (NOVAS ROTAS DE EDIÇÃO) -----
 @app.route('/humanos', methods=['GET', 'POST'])
 def humanos():
     if request.method == 'POST':
@@ -211,7 +223,7 @@ def humanos_delete(id):
     flash('Humano removido.', 'warning')
     return redirect(url_for('humanos'))
 
-# ----- ROUTES: MATERIAIS -----
+# ----- ROUTES: MATERIAIS (NOVAS ROTAS DE EDIÇÃO) -----
 @app.route('/materiais', methods=['GET', 'POST'])
 def materiais():
     if request.method == 'POST':
